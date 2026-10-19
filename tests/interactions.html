@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>ScopeCheck interaction check</title>
+<button id="run">Run interaction check (no project writes)</button><pre id="result">Ready</pre>
+<iframe id="app" title="ScopeCheck under test" src="/" style="width:100%;height:800px"></iframe>
+<script type="module">
+const frame=document.querySelector('#app'),result=document.querySelector('#result');
+const wait=async test=>{for(let i=0;i<100;i++){if(test())return;await new Promise(r=>setTimeout(r,100))}throw Error('Timed out')};
+const check=(value,message)=>{if(!value)throw Error(message);result.textContent+='\nPASS '+message};
+document.querySelector('#run').onclick=async()=>{
+ result.textContent='Running';
+ try{
+  await wait(()=>frame.contentDocument.querySelector('#localAiButton'));
+  const d=frame.contentDocument,w=frame.contentWindow,$=s=>d.querySelector(s);
+  $('#localAiButton').click();$('.rail-item[data-nav="projects"]').click();
+  check($('#projectsView').classList.contains('active'),'navigation remains available during model detection');
+  $('.project-row').click();await new Promise(r=>setTimeout(r,0));
+  const name=$('.project-hero-detail h1').textContent;
+  $('.rail-item[data-nav="home"]').click();
+  $('#globalSearch').value=name;$('#globalSearch').dispatchEvent(new w.Event('input',{bubbles:true}));
+  $('#globalSearch').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  check($('#projectView').classList.contains('active'),'search Enter opens the matching project');
+  check(!$('#searchPopover').classList.contains('open'),'navigation dismisses search overlay');await new Promise(r=>setTimeout(r,0));
+  $('.rail-item[data-nav="projects"]').click();$('#projectsView [data-open-capture]').click();await new Promise(r=>setTimeout(r,0));
+  $('#frameForm input[name="name"]').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  await wait(()=>$('#formError').textContent.length>0);
+  check($('#formError').textContent.length>0,'form Enter reaches validation without creating a blank project');
+  $('[data-frame-close]').click();$('.notification-button').click();
+  check($('#reviewsView').classList.contains('active'),'notification opens the review queue');
+  check(!$('.notification-button').hidden&&!!$('#localAiButton')&&!!$('.top-actions [data-no-i18n]'),'notification, local AI and language controls remain present');
+  check($('.focus-chip').hidden,'unconnected focus timer is hidden');
+  result.textContent+='\nDONE';
+ }catch(e){result.textContent+='\nFAIL '+e.message}
+};
+</script></html>

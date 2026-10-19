@@ -103,3 +103,14 @@
   .capture-modal footer { flex-wrap: wrap; }
   .toast { max-width: calc(100vw - 24px); bottom: 80px; }
 }
+
+/* Keep all existing header actions reachable when the search field shares a narrow row. */
+.top-actions { flex-shrink: 0; }
+.top-actions button { white-space: nowrap; }
+.search-wrap, .search-wrap input { min-width: 0; }
+@media(max-width:1000px) {
+  .topbar { height: auto; min-height: 78px; flex-wrap: wrap; }
+  .search-wrap { flex: 1 1 100%; width: 100%; }
+  .top-actions { margin-left: auto; }
+  .top-actions .notification-button { display: inline-flex; }
+}
