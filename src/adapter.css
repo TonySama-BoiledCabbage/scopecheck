@@ -118,3 +118,6 @@
 .proposal-preview { border: 2px dashed #8b631f !important; background: #fff4d5 !important; color: #49340e; }
 #calendarUnscheduled { margin: 12px 0 20px; display: grid; gap: 8px; }
 #calendarUnscheduled p { margin: 0; color: var(--muted); font-size: 13px; }
+/* Keep drawer actions reachable: newly revealed buttons (e.g. "Create Work Item") must not fall below the modal fold. */
+.detail-drawer aside .drawer-actions { position: sticky; bottom: -26px; z-index: 1; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 20px -26px -26px; padding: 14px 26px 26px; background: white; border-top: 1px solid var(--line); }
+#commitBlock { background: var(--marine, #0b5d7a); color: white; }
