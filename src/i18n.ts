@@ -4,6 +4,8 @@ export type Language='en'|'zh'
 let language:Language='en'
 export const getLanguage=()=>language
 const additions:[string,string][]=[
+  ['待审提议 · ','Pending proposal · '],['拟议日期：','Proposed dates: '],['虚线为待审提议预览，尚未批准，不会修改正式任务或基线。','Dashed entries preview pending proposals. They are not approved and do not change tasks or baselines.'],['未排期：以下记录没有日期，因此没有时间条。','Unscheduled: these records have no dates, so no timeline bar is shown.'],
+  ['查看变更审查','View Change Review'],['查看已创建任务','View Created Task'],['查看时间轴','View Timeline'],['任务已保存，已打开时间轴。','Task saved. Timeline opened.'],['任务已保存；尚未排期，请填写日期后显示时间条。','Task saved without dates. Add dates to display a timeline bar.'],['已保存为待审提议，时间轴显示虚线预览；尚未批准。','Saved as a pending proposal with a dashed timeline preview. It is not approved.'],['未找到已保存的任务或变更提议，请保留输入并重试。','No saved task or proposal found. Keep your input and retry.'],
   ['搜索项目、任务… 或输入 /clear','Search projects, tasks… or type /clear'],['清空网页测试数据（可恢复）','Clear web demo data (recoverable)'],['仅支持 /clear 网页命令','Only the /clear web command is supported'],['正在处理，请稍后再清空。','Processing is in progress. Wait before clearing.'],
   ['原文片段（只读）','Original Segment (Read Only)'],['人工核对','Review Manually'],
   ['Ollama AI 筛选 · 原文摘录（含句式校验）','Ollama AI Selection · Source Excerpt + Wording Check'],['AI 筛选后摘录原文，含请求用语校验；候选仍需人工核对。','AI selects requests with a wording check; candidate content is quoted from the original and still needs human review.'],

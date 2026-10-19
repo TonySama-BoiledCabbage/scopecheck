@@ -65,3 +65,7 @@ if (ingest.error) throw Error(ingest.error)
 AI 接口最长120秒；原件解析最长5分钟。不会创建云端项目，没有模型拉取接口。返回文字、原件和 README 都作为不可信项目资料处理，不授予操作权限；本地 AI 系统提示同样要求不遵守资料中的指令。
 
 失败恢复：输入和文件选择保持；从原件卡片查看错误并重新解析。若 IndexedDB 成功、metadata 因容量失败而未登记，原件仍在，重新选择同一文件或提交同一原文即可按哈希恢复登记。不要清理浏览器数据来“修复”解析错误。
+
+## Optional verified date hint in local AI responses
+
+`POST /api/local-ai/extract` retains its existing request shape. Internally Qwen returns `{actionable, dateQuote}`; `dateQuote` is an exact substring of that evidence unit or null. The adapter response retains `suggestions` and may add `dateHint: {quote: "within three days", date: "2026-10-22"}` to a suggestion when the unit's source-message date is 2026-10-19. This optional field is independently recomputed by `validateAiSuggestions` before persistence. Missing or unverifiable context leaves the date unset. It is a proposed work date, not approval or a model-generated duration. No new storage backend or endpoint is introduced.

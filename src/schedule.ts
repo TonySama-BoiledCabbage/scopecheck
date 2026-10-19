@@ -1,3 +1,5 @@
+import type {ProjectState} from './domain/model.ts'
+import {latestChanges} from './domain/engine.ts'
 import {dayDiff, addDays} from './domain/engine.ts'
 
 export const weekStart=(date:string)=>addDays(date,-((new Date(date+'T12:00:00').getDay()+6)%7))
@@ -24,4 +26,13 @@ export function dateBand(item:{start:string|null;end:string|null},first:string,d
   if(!start||!end)return null
   const offset=Math.max(0,dayDiff(first,start)),last=Math.min(days-1,dayDiff(first,end))
   return last<offset?null:{offset,length:last-offset+1}
+}
+
+// Read-only projection: proposed dates are visible, never applied to the task or baseline.
+export function scheduleEntries(state:ProjectState){
+  return [
+    ...state.items.map(item=>({item,changeId:null as string|null})),
+    ...latestChanges(state).flatMap(change=>change.proposed.kind==='item'&&['proposed','pending'].includes(change.status)
+      ?[{item:change.proposed.item,changeId:change.id}]:[]),
+  ]
 }

@@ -1,7 +1,7 @@
 import { useProject, listProjects, openProject, createProject, projectSession, exportProject } from './store/project.ts'
-import { saveItem, requiresReview, propose, commitChange } from './domain/engine.ts'
+import { saveItem, requiresReview, propose, commitChange, uid } from './domain/engine.ts'
 import { reviewBlock, commitBlock } from './domain/capture.ts'
-import type { Item, Decision } from './domain/model.ts'
+import type { Item, Decision, ProjectState } from './domain/model.ts'
 // Thin command facade: all writes go through Frame's locked, revision-checked store.
 export const frame = {
   listProjects, openProject, createProject, projectSession, exportProject,
@@ -19,3 +19,15 @@ export const frame = {
 }
 
 
+
+// Reuse Frame features/Capture.tsx EvidenceDialog materialisation; no UI port.
+export function draftFromBlock(state:ProjectState,block:ProjectState['blocks'][number]):Item {
+  const old=state.items.find(item=>item.id===block.placement.itemId)
+  const source=state.sources.find(source=>source.id===block.sourceId)
+  if(!source)throw Error('找不到需求原件，请重新打开项目。')
+  const evidence=`来源：${source.name} · ${block.evidence.locator} · block:${block.id}`
+  const requirement=block.description||block.evidence.text,date=block.placement.date
+  return old
+    ?{...old,goal:`${old.goal}\n${requirement}\n${evidence}`,...(date?{end:date,start:old.kind==='milestone'?date:old.start&&old.start>date?date:old.start}:{})}
+    :{id:uid(),title:block.title,kind:'task',phase:block.placement.phase??'concept',status:'planned',start:date,end:date,remainingDays:null,goal:`${requirement}\n${evidence}`,scopeRisk:false}
+}

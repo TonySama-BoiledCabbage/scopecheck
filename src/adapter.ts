@@ -4,11 +4,11 @@ import { editBlock } from './domain/capture.ts'
 import { updateProject } from './domain/projects.ts'
 import { importFiles, captureText, retrySource, extractWithOllama, useIngest } from './lib/ingest.ts'
 import { getOriginal } from './lib/media-db.ts'
-import type { Item, Decision } from './domain/model.ts'
+import { ItemSchema, type Item, type Decision } from './domain/model.ts'
 import './adapter.css'
-import { frame } from './frame.ts'
+import { frame, draftFromBlock } from './frame.ts'
 import { clearDemoSamples, restoreDemoSamples, DEMO_RECOVERY } from './demo-reset.ts'
-import { dateBand, weekStart, calendarPeriod, stepCalendarDate, type CalendarMode } from './schedule.ts'
+import { dateBand, scheduleEntries, weekStart, calendarPeriod, stepCalendarDate, type CalendarMode } from './schedule.ts'
 import { initI18n, getLanguage } from './i18n.ts'
 
 const $=(s:string)=>document.querySelector<HTMLElement>(s)!
@@ -24,6 +24,7 @@ function close(){ $('#detailDrawer').classList.remove('open');$('#detailDrawer')
 function selectProject(key:string){openProject(key);history.replaceState(null,'',`#project/${encodeURIComponent(key)}`)}
 function drawer(title:string,html:string){$('#drawerEyebrow').textContent=title;$('#drawerBody').innerHTML=html;$('#detailDrawer').classList.add('open');$('#detailDrawer').setAttribute('aria-hidden','false');$('#drawerBody input, #drawerBody button')?.focus()}
 function nav(view:string){$('#searchPopover').classList.remove('open');document.querySelectorAll<HTMLElement>('.view').forEach(x=>x.classList.toggle('active',x.dataset.view===view));document.querySelectorAll<HTMLElement>('.rail-item').forEach(x=>x.classList.toggle('active',x.dataset.nav===view));window.scrollTo(0,0)}
+function projectPanel(panel:string){document.querySelectorAll<HTMLElement>('[data-project-content]').forEach(x=>x.classList.toggle('active',x.dataset.projectContent===panel));document.querySelectorAll<HTMLElement>('[data-project-panel]').forEach(x=>x.classList.toggle('active',x.dataset.projectPanel===panel))}
 function on(id:string,fn:()=>unknown){document.getElementById(id)!.onclick=()=>void action(fn)}
 let pending=false
 async function action(fn:()=>unknown){if(pending)return;pending=true;try{await fn()}catch(e){const msg=e instanceof Error?e.message:String(e);const error=document.getElementById('formError');if(error)error.textContent=msg;notice(msg)}finally{pending=false}}
@@ -34,15 +35,21 @@ const statuses=[['planned','未开始'],['active','进行中'],['done','已完�
 const phases=[['research','调研与定义'],['concept','概念设计'],['development','设计深化'],['delivery','交付与归档']]
 function formData(){return new FormData(document.querySelector<HTMLFormElement>('#frameForm')!)}
 function taskEditor(id?:string,blockId?:string){
-  const session=projectSession(),s=session.read(),original=s.items.find(i=>i.id===id)??null,b=s.blocks.find(b=>b.id===blockId)
-  const item:Item=original??{id:uid(),title:b?.title??'',kind:'task',phase:b?.placement.phase??'research',status:'planned',start:null,end:null,remainingDays:null,goal:b?.description??'',scopeRisk:!!b}
+  const session=projectSession(),s=session.read(),b=s.blocks.find(b=>b.id===blockId)
+  const original=s.items.find(i=>i.id===(id??b?.placement.itemId))??null
+  const item:Item=b?draftFromBlock(s,b):original??{id:uid(),title:'',kind:'task',phase:'research',status:'planned',start:null,end:null,remainingDays:null,goal:'',scopeRisk:false}
   drawer('TASK · FRAME',`<h2>${original?'编辑':'添加'}任务</h2><form id="frameForm" class="center-form">${field('任务名称','title',item.title)}${select('类型','kind',[['task','内部任务'],['milestone','正式里程碑'],['stage','阶段目标']],item.kind)}${select('阶段','phase',phases,item.phase)}${select('状态','status',statuses,item.status)}${field('开始日期','start',item.start,'date')}${field('结束日期','end',item.end,'date')}${field('剩余自然日（未知可留空）','remainingDays',item.remainingDays,'number')}<label>说明<textarea name="goal">${esc(item.goal)}</textarea></label><label><input name="scopeRisk" type="checkbox" ${item.scopeRisk?'checked':''}>涉及范围变更</label></form><p>保存沿用 Frame 校验；正式承诺或范围风险仅记录为变更提议。</p>${errorSlot}<div class="drawer-actions"><button id="saveTask">保存</button><button data-frame-close>取消</button></div>`)
   on('saveTask',async()=>{
     const f=formData(),next={...item,title:String(f.get('title')),kind:String(f.get('kind')) as Item['kind'],phase:String(f.get('phase')) as Item['phase'],status:String(f.get('status')) as Item['status'],start:String(f.get('start'))||null,end:String(f.get('end'))||null,remainingDays:f.get('remainingDays')===''?null:Number(f.get('remainingDays')),goal:String(f.get('goal')),scopeRisk:f.has('scopeRisk')}
     if(b)await frame.commit(b.id,b.review.revision,next,s.dataRevision,session)
     else await frame.saveTask(next,original,session)
-    const saved=session.read().items.some(i=>JSON.stringify(i)===JSON.stringify(next))
-    render();close();notice(saved?'任务已保存到本机':'变更提议已保存，计划与基线未改变')
+    const after=session.read(),normalized=ItemSchema.parse(next)
+    const saved=after.items.find(i=>i.id===next.id&&JSON.stringify(i)===JSON.stringify(normalized))
+    const change=latestChanges(after).find(c=>c.proposed.kind==='item'&&c.proposed.item.id===next.id&&['proposed','pending'].includes(c.status))
+    if(!saved&&!change)throw Error('未找到已保存的任务或变更提议，请保留输入并重试。')
+    render();close();nav('project')
+    if(saved){projectPanel('plan');notice(saved.start||saved.end?'任务已保存，已打开时间轴。':'任务已保存；尚未排期，请填写日期后显示时间条。')}
+    else{projectPanel('changes');changeEditor(change!.id);notice('已保存为待审提议，时间轴显示虚线预览；尚未批准。')}
   })
 }
 function projectEditor(fresh=false){
@@ -53,7 +60,8 @@ function projectEditor(fresh=false){
 function reviewEditor(id:string){
   const session=projectSession(),b=session.read().blocks.find(x=>x.id===id)!
   const source=session.read().sources.find(x=>x.id===b.sourceId)!
-  drawer('REQUIREMENT · FRAME',`<h2 data-no-i18n="true">${esc(b.title)}</h2><p>${esc(b.engine==='rules'?'规则整理（非 AI）':b.engine==='ollama'?'Ollama 本地 AI 候选':'人工整理')} · ${esc(b.review.status)}</p><div class="detail-source">${userText(source.name)} · <span>${esc(b.evidence.locator)}</span></div><blockquote>${esc(b.evidence.text)}</blockquote><form id="frameForm" class="center-form">${field('标题','title',b.title)}<label>需求说明<textarea name="description">${esc(b.description)}</textarea></label><p ${b.uncertainties.length?'data-no-i18n="true"':''}>${b.uncertainties.map(esc).join('<br>')||'无规则识别的不确定项；仍需人工核对。'}</p><label><input type="checkbox" name="ack">已逐条核对不确定项；此操作不批准日期、额度或范围</label></form>${errorSlot}<div class="drawer-actions">${!b.commit?'<button id="editBlock">保存修正</button><button id="confirmBlock">确认内容</button><button id="dismissBlock">移除建议</button>':''}${b.review.status==='confirmed'&&!b.commit?'<button id="commitBlock">落实到工作项</button>':''}<button data-source="${esc(source.id)}">查看原件</button></div>`)
+  const committedItem=b.commit&&session.read().items.find(i=>i.id===b.commit!.itemId)
+  drawer('REQUIREMENT · FRAME',`<h2 data-no-i18n="true">${esc(b.title)}</h2><p>${esc(b.engine==='rules'?'规则整理（非 AI）':b.engine==='ollama'?'Ollama 本地 AI 候选':'人工整理')} · ${esc(b.review.status)}</p><div class="detail-source">${userText(source.name)} · <span>${esc(b.evidence.locator)}${b.evidence.author?' · '+userText(b.evidence.author):''}${b.evidence.eventTimeRaw?' · '+esc(b.evidence.eventTimeRaw):''}</span></div><blockquote>${esc(b.evidence.text)}</blockquote><form id="frameForm" class="center-form">${field('标题','title',b.title)}<label>需求说明<textarea name="description">${esc(b.description)}</textarea></label><p ${b.uncertainties.length?'data-no-i18n="true"':''}>${b.uncertainties.map(esc).join('<br>')||'无规则识别的不确定项；仍需人工核对。'}</p><label><input type="checkbox" name="ack">已逐条核对不确定项；此操作不批准日期、额度或范围</label></form>${errorSlot}<div class="drawer-actions">${!b.commit?'<button id="editBlock">保存修正</button><button id="confirmBlock">确认内容</button><button id="dismissBlock">移除建议</button>':''}${b.review.status==='confirmed'&&!b.commit?'<button id="commitBlock">落实到工作项</button>':''}${b.commit?.changeId?`<button data-change-id="${esc(b.commit.changeId)}">查看变更审查</button>`:''}${committedItem?`<button data-task-id="${esc(committedItem.id)}">查看已创建任务</button><button data-open-plan>查看时间轴</button>`:''}<button data-source="${esc(source.id)}">查看原件</button></div>`)
   if(b.commit)return
   on('editBlock',async()=>{const f=formData();await session.run(s=>editBlock(s,id,b.review.revision,String(f.get('title')),String(f.get('description'))));render();reviewEditor(id);notice('修正已保存，重新待审')})
   on('confirmBlock',async()=>{const f=formData();if(String(f.get('title'))!==b.title||String(f.get('description'))!==b.description)throw Error('请先保存修正，再确认内容。');await frame.review(id,b.review.revision,'confirmed',f.has('ack'),session);render();reviewEditor(id);notice('需求内容已确认，计划与基线未改变')})
@@ -62,7 +70,8 @@ function reviewEditor(id:string){
 }
 function changeEditor(id:string){
   const session=projectSession(),c=latestChanges(session.read()).find(c=>c.id===id)!
-  drawer('CHANGE REVIEW · FRAME',`<h2>正式变更审查</h2><p ${c.proposed.kind==='item'?'data-no-i18n="true"':''}>${esc(c.proposed.kind==='item'?c.proposed.item.title:c.proposed.kind==='delivery'?`交付日 → ${c.proposed.date}`:'额度规则')}</p><p>${esc(c.outcome)}</p><p>日期差：${esc(c.assessment.deltaDays??'无法估算')} 天<br>${c.assessment.warnings.map(esc).join('<br>')}</p><p>原基线 V${c.assessment.baseline.version} · 额度已用 ${c.assessment.consumed} · 待确认 ${c.assessment.pending} · 剩余 ${esc(c.assessment.remaining??'未知')}</p><form id="frameForm" class="center-form">${select('工期判断','duration',[['unknown','未知'],['unchanged','不变'],['changed','已调整']],c.decision?.duration??'unknown')}${field('调整后总自然日','durationDays',c.decision?.durationDays,'number')}${select('修改额度','allowance',[['unknown','待确认'],['no','不消耗'],['yes','消耗']],c.decision?.allowance??'unknown')}${field('轮次 / 计费单元','allowanceKey',c.decision?.allowanceKey)}${field('数量','units',c.decision?.units??1,'number')}${select('承诺状态','commitment',[['needs_confirmation','等待客户确认'],['internal','仅内部变更'],['approved','登记书面批准']],c.decision?.commitment??'needs_confirmation')}${field('判断理由','reason',c.decision?.reason)}${field('批准人','approvedBy',c.decision?.approvedBy)}${field('批准日期','approvedAt',c.decision?.approvedAt,'date')}<label>书面依据<textarea name="evidence">${esc(c.decision?.evidence)}</textarea></label>${field('相关来源','relatedSources',c.decision?.relatedSources)}<label><input type="checkbox" name="manualReview">已人工核查估算与影响</label><label><input type="checkbox" name="scopeAuthorized">已核对范围的独立合同授权</label></form>${errorSlot}<div class="drawer-actions">${['proposed','pending'].includes(c.status)?'<button id="decideChange">提交审查</button><button id="refreshChange">重新评估</button><button id="withdrawChange">撤回</button>':''}<button data-frame-close>关闭</button></div>`)
+  const appliedItemId=c.proposed.kind==='item'?c.proposed.item.id:null
+  drawer('CHANGE REVIEW · FRAME',`<h2>正式变更审查</h2><p ${c.proposed.kind==='item'?'data-no-i18n="true"':''}>${esc(c.proposed.kind==='item'?c.proposed.item.title:c.proposed.kind==='delivery'?`交付日 → ${c.proposed.date}`:'额度规则')}</p><p>${esc(c.outcome)}</p>${c.proposed.kind==='item'?`<p>拟议日期：${esc(c.proposed.item.start??'未排期')} — ${esc(c.proposed.item.end??'未定结束日期')}</p>`:''}<p>日期差：${esc(c.assessment.deltaDays??'无法估算')} 天<br>${c.assessment.warnings.map(esc).join('<br>')}</p><p>原基线 V${c.assessment.baseline.version} · 额度已用 ${c.assessment.consumed} · 待确认 ${c.assessment.pending} · 剩余 ${esc(c.assessment.remaining??'未知')}</p><form id="frameForm" class="center-form">${select('工期判断','duration',[['unknown','未知'],['unchanged','不变'],['changed','已调整']],c.decision?.duration??'unknown')}${field('调整后总自然日','durationDays',c.decision?.durationDays,'number')}${select('修改额度','allowance',[['unknown','待确认'],['no','不消耗'],['yes','消耗']],c.decision?.allowance??'unknown')}${field('轮次 / 计费单元','allowanceKey',c.decision?.allowanceKey)}${field('数量','units',c.decision?.units??1,'number')}${select('承诺状态','commitment',[['needs_confirmation','等待客户确认'],['internal','仅内部变更'],['approved','登记书面批准']],c.decision?.commitment??'needs_confirmation')}${field('判断理由','reason',c.decision?.reason)}${field('批准人','approvedBy',c.decision?.approvedBy)}${field('批准日期','approvedAt',c.decision?.approvedAt,'date')}<label>书面依据<textarea name="evidence">${esc(c.decision?.evidence)}</textarea></label>${field('相关来源','relatedSources',c.decision?.relatedSources)}<label><input type="checkbox" name="manualReview">已人工核查估算与影响</label><label><input type="checkbox" name="scopeAuthorized">已核对范围的独立合同授权</label></form>${errorSlot}<div class="drawer-actions">${['proposed','pending'].includes(c.status)?'<button id="decideChange">提交审查</button><button id="refreshChange">重新评估</button><button id="withdrawChange">撤回</button>':''}${appliedItemId&&session.read().items.some(i=>i.id===appliedItemId)?'<button data-open-plan>查看时间轴</button>':''}<button data-frame-close>关闭</button></div>`)
   if(!['proposed','pending'].includes(c.status))return
   on('decideChange',async()=>{const f=formData();await frame.decide(id,{duration:f.get('duration'),durationDays:f.get('durationDays')===''?null:Number(f.get('durationDays')),allowance:f.get('allowance'),allowanceKey:f.get('allowanceKey'),units:Number(f.get('units')),commitment:f.get('commitment'),reason:f.get('reason'),evidence:f.get('evidence'),approvedBy:f.get('approvedBy'),approvedAt:f.get('approvedAt')||null,relatedSources:f.get('relatedSources'),manualReview:f.has('manualReview'),scopeAuthorized:f.has('scopeAuthorized')} as Decision,session);render();changeEditor(id);notice(latestChanges(session.read()).find(c=>c.id===id)!.outcome)})
   on('refreshChange',async()=>{await session.run(s=>refreshChange(s,id).state);render();changeEditor(id)})
@@ -90,7 +99,8 @@ function render(){
   const taskRows=s.items.map(i=>`<article data-task-id="${esc(i.id)}" tabindex="0" role="button"><small>${esc(i.phase)}</small><b>${esc(i.title)}</b><p>${esc(statuses.find(x=>x[0]===i.status)?.[1])} · ${esc(i.end??'未排期')}</p></article>`).join('')
   $('.kanban').innerHTML=`<div class="kanban-col">${taskRows||'<p>尚无工作项，点击添加任务。</p>'}</div>`;$('.board-panel h2').textContent=`${s.project.name} 待办`
   // Date-only records share an inclusive projection in both calendars and the timeline.
-  const current=today(),period=calendarPeriod(calendarDate,calendarMode),monday=weekStart(calendarDate)
+  const schedule=scheduleEntries(s),current=today(),period=calendarPeriod(calendarDate,calendarMode),monday=weekStart(calendarDate)
+  const entryTarget=(changeId:string|null,id:string)=>changeId?`data-change-id="${esc(changeId)}"`:`data-task-id="${esc(id)}"`
   $('#calendarView .page-heading p').textContent='当前项目的日期范围；未设置小时排期。'
   $('#calendarSegments').innerHTML=`${(['day','week','month'] as const).map((mode,n)=>`<button data-calendar-mode="${mode}" class="${calendarMode===mode?'active':''}" aria-pressed="${calendarMode===mode}">${['日视图','周视图','月视图'][n]}</button>`).join('')}<button data-calendar-step="-1" aria-label="上一个周期">←</button><button data-week-today>今天</button><button data-calendar-step="1" aria-label="下一个周期">→</button><label class="week-picker">选择日期 <input type="date" id="calendarDate" value="${calendarDate}"></label><span>${period.start}${period.end===period.start?'':' — '+period.end}</span>`
 
@@ -102,16 +112,21 @@ function render(){
     container.querySelectorAll<HTMLElement>('.day-head').forEach((x,n)=>{const date=addDays(start,n);x.hidden=false;x.title=date;x.querySelector('small')!.textContent=new Date(date+'T12:00:00').toLocaleDateString(getLanguage()==='en'?'en-US':'zh-CN',{weekday:'short'});x.querySelector('b')!.textContent=date.slice(-2);x.classList.toggle('today',date===current)})
     container.querySelectorAll<HTMLElement>('.time-label,.full-time-label,.now-line').forEach(x=>x.hidden=true)
     container.querySelector('.calendar-corner span')!.textContent='日期范围'
-    const items=s.items.map(i=>({item:i,band:dateBand(i,start,7)})).filter(x=>x.band)
+    const items=schedule.map(entry=>({...entry,band:dateBand(entry.item,start,7)})).filter(x=>x.band)
     container.style.gridTemplateRows=`48px repeat(${Math.max(1,items.length)},72px) minmax(80px,1fr)`
-    container.insertAdjacentHTML('beforeend',items.map(({item:i,band},n)=>`<button class="${selector==='.compact-calendar'?'cal-event':'full-event'} blue" data-task-id="${esc(i.id)}" title="${esc(i.title)} · ${esc(i.start??'未定')} — ${esc(i.end??'未定')}" style="grid-column:${band!.offset+2} / span ${band!.length};grid-row:${n+2}"><b>${userText(i.title)}</b><small>${esc(i.start??'未定')} — ${esc(i.end??'未定')}</small></button>`).join('')||'<p class="frame-empty" style="grid-column:2 / -1;grid-row:2">本周暂无已排期工作项</p>')
+    container.insertAdjacentHTML('beforeend',items.map(({item:i,band,changeId},n)=>`<button class="${selector==='.compact-calendar'?'cal-event':'full-event'} blue ${changeId?'proposal-preview':''}" ${entryTarget(changeId,i.id)} title="${esc(i.title)} · ${esc(i.start??'未定')} — ${esc(i.end??'未定')}" style="grid-column:${band!.offset+2} / span ${band!.length};grid-row:${n+2}"><b>${changeId?'待审提议 · ':''}${userText(i.title)}</b><small>${esc(i.start??'未定')} — ${esc(i.end??'未定')}</small></button>`).join('')||'<p class="frame-empty" style="grid-column:2 / -1;grid-row:2">本周暂无已排期工作项</p>')
   }
   const weekWrapper=$('.full-week').parentElement!;weekWrapper.hidden=calendarMode!=='week'
   let extra=document.getElementById('calendarExtra')
   if(!extra){extra=document.createElement('div');extra.id='calendarExtra';$('.full-calendar-panel').append(extra)}
   extra.hidden=calendarMode==='week'
-  const eventButton=(i:Item)=>`<button class="calendar-task blue" data-task-id="${esc(i.id)}" title="${esc(i.title)} · ${esc(i.start??'')} — ${esc(i.end??'')}"><b>${userText(i.title)}</b><small>${esc(i.start??'未定')} — ${esc(i.end??'未定')}</small></button>`
-  const dayItems=(date:string)=>s.items.filter(i=>dateBand(i,date,1))
+  const eventButton=({item:i,changeId}:{item:Item;changeId:string|null})=>`<button class="calendar-task blue ${changeId?'proposal-preview':''}" ${entryTarget(changeId,i.id)} title="${esc(i.title)} · ${esc(i.start??'')} — ${esc(i.end??'')}"><b>${changeId?'待审提议 · ':''}${userText(i.title)}</b><small>${esc(i.start??'未排期')} — ${esc(i.end??'未定结束日期')}</small></button>`
+  let note=document.getElementById('calendarUnscheduled')
+  if(!note){note=document.createElement('section');note.id='calendarUnscheduled';$('#calendarSegments').after(note)}
+  const undated=schedule.filter(e=>!e.item.start&&!e.item.end),pending=schedule.filter(e=>e.changeId)
+  note.innerHTML=(pending.length?'<p>虚线为待审提议预览，尚未批准，不会修改正式任务或基线。</p>':'')+(undated.length?`<p>未排期：以下记录没有日期，因此没有时间条。</p>${undated.map(eventButton).join('')}`:'')
+  note.hidden=!note.innerHTML
+  const dayItems=(date:string)=>schedule.filter(e=>dateBand(e.item,date,1))
   if(calendarMode==='day'){
     const items=dayItems(calendarDate)
     extra.innerHTML=`<section class="calendar-day"><h2 data-no-i18n="true">${calendarDate} · ${new Date(calendarDate+'T12:00:00').toLocaleDateString(getLanguage()==='en'?'en-US':'zh-CN',{weekday:'long'})}</h2><p>日期范围 · 无小时排期</p>${items.map(eventButton).join('')||'<p class="frame-empty">当天暂无已排期工作项</p>'}</section>`
@@ -119,8 +134,8 @@ function render(){
     const first=weekStart(period.start),count=Math.ceil((dayDiff(first,period.start)+period.days)/7)*7
     extra.innerHTML=`<div class="calendar-month">${Array.from({length:7},(_,n)=>`<div class="month-weekday">${new Date(addDays(first,n)+'T12:00:00').toLocaleDateString(getLanguage()==='en'?'en-US':'zh-CN',{weekday:'short'})}</div>`).join('')}${Array.from({length:count},(_,n)=>{const date=addDays(first,n),items=dayItems(date);return `<article class="calendar-month-cell ${date.slice(0,7)!==calendarDate.slice(0,7)?'outside-month':''} ${date===current?'is-today':''}"><button class="calendar-date" data-calendar-day="${date}" aria-label="${date}" title="${date}">${Number(date.slice(-2))}</button><div class="month-tasks">${items.map(eventButton).join('')}</div></article>`}).join('')}</div>`
   }else extra.innerHTML=''
-  const dates=s.items.flatMap(i=>[i.start,i.end]).filter((x):x is string=>!!x).sort(),first=dates[0]??current,last=dates.at(-1)??current,span=Math.max(1,dayDiff(first,last)+1),tickCount=Math.min(5,span)
-  $('.roadmap').innerHTML=`<div class="roadmap-content"><div class="roadmap-dates">${Array.from({length:tickCount},(_,n)=>{const offset=Math.round((span-1)*n/Math.max(1,tickCount-1));return `<span style="left:${(offset+.5)/span*100}%">${addDays(first,offset)}</span>`}).join('')}</div>`+s.items.map(i=>{const band=dateBand(i,first,span);return `<div class="roadmap-row"><b>${esc(phases.find(x=>x[0]===i.phase)?.[1])}</b><div class="roadmap-task"><button class="roadmap-label" data-task-id="${esc(i.id)}">${userText(i.title)}<small>${esc(i.start??'未排期')} — ${esc(i.end??'未定结束日期')}</small></button><div class="roadmap-track">${band?`<button class="roadbar rb1" aria-label="${esc(i.title)} · ${esc(i.start??i.end)} — ${esc(i.end??i.start)}" data-task-id="${esc(i.id)}" style="left:${band.offset/span*100}%;width:${band.length/span*100}%"></button>`:''}</div></div></div>`}).join('')+(s.items.length?'':'<p class="frame-empty">当前项目尚无任务</p>')+'</div>'
+  const dates=schedule.flatMap(({item:i})=>[i.start,i.end]).filter((x):x is string=>!!x).sort(),first=dates[0]??current,last=dates.at(-1)??current,span=Math.max(1,dayDiff(first,last)+1),tickCount=Math.min(5,span)
+  $('.roadmap').innerHTML=`<div class="roadmap-content"><div class="roadmap-dates">${Array.from({length:tickCount},(_,n)=>{const offset=Math.round((span-1)*n/Math.max(1,tickCount-1));return `<span style="left:${(offset+.5)/span*100}%">${addDays(first,offset)}</span>`}).join('')}</div>`+schedule.map(({item:i,changeId})=>{const band=dateBand(i,first,span);return `<div class="roadmap-row"><b>${esc(phases.find(x=>x[0]===i.phase)?.[1])}</b><div class="roadmap-task"><button class="roadmap-label ${changeId?'proposal-preview':''}" ${entryTarget(changeId,i.id)}>${changeId?'待审提议 · ':''}${userText(i.title)}<small>${esc(i.start??'未排期')} — ${esc(i.end??'未定结束日期')}</small></button><div class="roadmap-track">${band?`<button class="roadbar rb1 ${changeId?'proposal-preview':''}" aria-label="${changeId?'待审提议 · ':''}${esc(i.title)} · ${esc(i.start??i.end)} — ${esc(i.end??i.start)}" ${entryTarget(changeId,i.id)} style="left:${band.offset/span*100}%;width:${band.length/span*100}%"></button>`:''}</div></div></div>`}).join('')+(schedule.length?'':'<p class="frame-empty">当前项目尚无任务</p>')+'</div>'
   if(!document.getElementById('reviewTools'))$('#reviewsView .page-heading').insertAdjacentHTML('afterend','<div id="reviewTools" class="toolbar"></div>')
   const sourceFragments=[...new Map(s.blocks.map(block=>[block.sourceId+JSON.stringify(block.evidence),block])).values()]
   const latestSource=s.sources.at(-1)
@@ -160,7 +175,7 @@ function clearSamplesEditor(){
   on('confirmClearSamples',()=>clearWorkspace(entries.map(p=>p.key)))
 }
 
-async function detectAi(){models=[];try{const r=await fetch('/api/local-ai/models',{signal:AbortSignal.timeout(12000),headers:{'X-Frame-Parser':'local-v1'}});const v=await r.json();if(!r.ok)throw Error(v.error||'本地 AI 不可用');models=v.models;aiStatus=models.length?`Ollama 可用 · ${models.length} 个本地模型`:'Ollama 不可用：未发现已安装的本地模型'}catch(e){aiStatus='Ollama 不可用：'+(e instanceof Error?e.message:String(e))}render()}
+async function detectAi(){models=[];try{const r=await fetch('/api/local-ai/models',{signal:AbortSignal.timeout(12000),headers:{'X-Frame-Parser':'local-v1'}});const v=await r.json();if(!r.ok)throw Error(v.error||'本地 AI 不可用');models=[...v.models].sort((a,b)=>Number(b==='gemma3:1b')-Number(a==='gemma3:1b'));aiStatus=models.length?`Ollama 可用 · ${models.length} 个本地模型`:'Ollama 不可用：未发现已安装的本地模型'}catch(e){aiStatus='Ollama 不可用：'+(e instanceof Error?e.message:String(e))}render()}
 function chooseProject(){drawer('PROJECTS',`<h2>选择项目</h2>${listProjects().map(p=>`<button class="project-row" data-project-key="${esc(p.key)}">${p.state?userText(p.state.project.name):esc(p.error)}</button>`).join('')}`)}
 function search(){const input=$('#globalSearch') as HTMLInputElement,q=input.value.trim().toLowerCase();if(!q){$('#searchPopover').classList.remove('open');return;}if(q.startsWith('/')){$('#searchPopover').innerHTML='/clear'.startsWith(q.trim())?`<button class="search-result" data-web-clear ${pending||useIngest.getState().busy?'disabled':''}>/clear · 清空网页测试数据（可恢复）</button>`:'<p>仅支持 /clear 网页命令</p>';$('#searchPopover').classList.add('open');return;}$('#searchPopover').innerHTML=[...listProjects().filter(p=>p.state&&p.state.project.name.toLowerCase().includes(q)).map(p=>`<button class="search-result" data-project-key="${esc(p.key)}">项目 · ${userText(p.state!.project.name)}</button>`),...state().items.filter(x=>x.title.toLowerCase().includes(q)).map(x=>`<button class="search-result" data-task-id="${esc(x.id)}">任务 · ${userText(x.title)}</button>`),...state().blocks.filter(x=>x.title.toLowerCase().includes(q)).map(x=>`<button class="search-result" data-block-id="${esc(x.id)}">需求 · ${userText(x.title)}</button>`)].join('')||'<p>无匹配结果</p>';$('#searchPopover').classList.add('open')}
 
@@ -171,7 +186,8 @@ document.addEventListener('click',event=>{
   const d=el.dataset,text=el.textContent??''
   let fn:(()=>unknown)|undefined
   if(d.nav)fn=()=>nav(d.nav!)
-  else if(d.projectPanel)fn=()=>{document.querySelectorAll<HTMLElement>('[data-project-content]').forEach(x=>x.classList.toggle('active',x.dataset.projectContent===d.projectPanel));document.querySelectorAll<HTMLElement>('[data-project-panel]').forEach(x=>x.classList.toggle('active',x===el))}
+  else if(d.projectPanel)fn=()=>projectPanel(d.projectPanel!)
+  else if('openPlan' in d)fn=()=>{close();nav('project');projectPanel('plan')}
   else if(d.projectKey)fn=()=>{selectProject(d.projectKey!);render();close();nav('project')}
   else if(d.taskId)fn=()=>taskEditor(d.taskId)
   else if(d.blockId)fn=()=>reviewEditor(d.blockId!)

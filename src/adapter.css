@@ -114,3 +114,7 @@
   .top-actions { margin-left: auto; }
   .top-actions .notification-button { display: inline-flex; }
 }
+
+.proposal-preview { border: 2px dashed #8b631f !important; background: #fff4d5 !important; color: #49340e; }
+#calendarUnscheduled { margin: 12px 0 20px; display: grid; gap: 8px; }
+#calendarUnscheduled p { margin: 0; color: var(--muted); font-size: 13px; }

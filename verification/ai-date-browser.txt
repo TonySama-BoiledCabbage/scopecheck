@@ -1,0 +1,15 @@
+Running
+PASS original parsed into review candidates
+PASS real Qwen extracts absolute, relative and meeting dates from the parsed chat
+PASS meeting hours remain in original evidence
+PASS confirmation does not change plan or baseline
+PASS AI date automatically pre-fills work-item form
+PASS scope-risk save opens change review without applying a task
+PASS submitted candidate retains a review continuation link
+PASS continuation link reopens the saved change
+PASS ordinary task defaults to original Frame internal-task flow
+PASS relative deadline automatically pre-fills both dates without manual entry
+PASS normalised internal task is saved and shown as a timeline bar
+PASS internal save does not approve or rewrite a baseline
+PASS timeline task survives page reload
+DONE frame-project:cba19079-8021-4959-a70a-8b21236ed2ff

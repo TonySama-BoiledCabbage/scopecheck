@@ -1,3 +1,4 @@
+import {resolveDateHint} from '../lib/date-hint.ts'
 import { z } from 'zod'
 import { PlacementSchema, SourceSchema, ExtractionSchema, BlockSchema, AiSuggestionsSchema,uncertaintiesFor } from './capture-model.ts'
 import type { Placement, Source, Extraction, InformationBlock, ExtractedUnit } from './capture-model.ts'
@@ -77,6 +78,7 @@ export function validateAiSuggestions(value:unknown,units:ExtractedUnit[]) {
   for(const part of parsed.suggestions){
     const unit=units[part.evidenceIndex]
     if(!unit||!unit.text.includes(part.quote))throw Error('AI返回了无法对应原文的证据，结果未保存。')
+    if(part.dateHint&&resolveDateHint(part.dateHint.quote,unit)!==part.dateHint.date)throw Error('AI日期无法由原文及消息时间验证，结果未保存。')
     const numbers=(part.title+' '+part.description).match(/\d+(?:\.\d+)?/g)??[]
     const sourceNumbers=new Set(unit.text.match(/\d+(?:\.\d+)?/g)??[])
     if(numbers.some(n=>!sourceNumbers.has(n)))throw Error('AI引入了原文没有的数字，请重试或人工整理。')
@@ -92,8 +94,10 @@ export function saveAiSuggestions(s:ProjectState,sourceId:string,units:Extracted
     if(blocks.some(b=>b.sourceId===sourceId&&b.unitKey===key))continue
     const evidence=units[part.evidenceIndex]
     const untouched=blocks.find(b=>b.sourceId===sourceId&&b.engine==='rules'&&b.review.revision===0&&!b.commit&&JSON.stringify(b.evidence)===JSON.stringify(evidence))
+    const placement=untouched?.placement??recommend(s,evidence)
+    const datedPlacement=part.dateHint&&placement.origin!=='user'?{...placement,date:part.dateHint.date,reason:`本地 AI 定位日期，规则校验（未批准）：${part.dateHint.quote}`} : placement
     const block=BlockSchema.parse({...untouched,id:untouched?.id??uid(),sourceId,unitKey:key,title:part.title,description:part.description,quote:part.quote,evidence,engine:'ollama',
-      uncertainties:[...new Set([...part.uncertainties,...uncertaintiesFor(evidence.text)])],review:{status:'unreviewed',revision:untouched?untouched.review.revision+1:0,at:null,acknowledged:false},placement:untouched?.placement??recommend(s,evidence),createdAt:untouched?.createdAt??new Date().toISOString()})
+      uncertainties:[...new Set([...part.uncertainties,...(part.dateHint?['建议日期由原文提取，请核对；不代表批准改期。']:[]),...uncertaintiesFor(evidence.text)])],review:{status:'unreviewed',revision:untouched?untouched.review.revision+1:0,at:null,acknowledged:false},placement:datedPlacement,createdAt:untouched?.createdAt??new Date().toISOString()})
     if(untouched){previous.push(untouched);blocks[blocks.indexOf(untouched)]=block}else blocks.push(block)
     saved.push(block)
   }

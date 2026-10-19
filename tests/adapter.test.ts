@@ -34,3 +34,33 @@ test('适配命令复用真实存储：正式提议、旧表单拒绝、项目�
   await assert.rejects(frame.saveTask(item,null,session),/切换/)
   assert.equal(frame.read().items.length,0)
 })
+
+
+test('original Frame materialisation preserves placement, source, linked task and mandatory formal review',async()=>{
+  const {draftFromBlock}=await import('../src/frame.ts')
+  const {createEmptyProject}=await import('../src/domain/projects.ts')
+  const {registerSource,finishExtraction,reviewBlock,placeBlock,commitBlock}=await import('../src/domain/capture.ts')
+  const {saveItem}=await import('../src/domain/engine.ts')
+  const base=createEmptyProject({name:'Materialisation check',client:'Synthetic',start:null})
+  const source={id:'draft-source',hash:'a'.repeat(64),batchId:'draft-test',name:'feedback.txt',aliases:[],mime:'text/plain',size:40,importedAt:'2026-10-19T00:00:00Z',status:'queued' as const,error:'',parser:'',warnings:[]}
+  const unit={text:'Please check the logo position.',locator:'Line 1',page:null,bounds:null,startSeconds:null,endSeconds:null,eventTimeRaw:null,occurredAt:null,author:null}
+  let state=finishExtraction(registerSource(base,source),source.id,{parser:'text',warnings:[],units:[unit]},['draft-unit'])
+  let block=state.blocks[0]
+  state=reviewBlock(state,block.id,block.review.revision,'confirmed',true);block=state.blocks[0]
+  const undated=draftFromBlock(state,block)
+  assert.equal(undated.scopeRisk,false);assert.equal(undated.start,null);assert.equal(undated.end,null)
+  assert.ok(undated.goal.includes('feedback.txt'));assert.ok(undated.goal.includes(block.id))
+  state=placeBlock(state,block.id,{...block.placement,date:'2026-10-21',phase:'concept'},block.placement.revision);block=state.blocks[0]
+  const dated=draftFromBlock(state,block),created=commitBlock(state,block.id,block.review.revision,dated,state.dataRevision)
+  assert.equal(created.change,null);assert.equal(created.state.items[0].start,'2026-10-21');assert.equal(created.state.items[0].end,'2026-10-21')
+  assert.deepEqual(created.state.baselines,base.baselines)
+  const existing={...dated,id:'linked-task',title:'Existing task',start:'2026-10-23',end:'2026-10-24',goal:'Existing description'}
+  const linkedState=saveItem(state,existing,null),linkedBlock={...block,placement:{...block.placement,itemId:existing.id}}
+  const linked=draftFromBlock(linkedState,linkedBlock)
+  assert.equal(linked.id,existing.id);assert.equal(linked.title,existing.title);assert.equal(linked.start,'2026-10-21');assert.ok(linked.goal.startsWith('Existing description'))
+  const formalState={...linkedState,items:[{...existing,kind:'milestone' as const,start:'2026-10-24',end:'2026-10-24',scopeRisk:true}],baselines:linkedState.baselines.map(b=>({...b,milestones:{[existing.id]:'2026-10-24'},scopeItems:{[existing.id]:'Registered scope'}}))}
+  const formal=draftFromBlock(formalState,linkedBlock)
+  assert.equal(formal.scopeRisk,true);assert.equal(formal.start,formal.end)
+  const proposed=commitBlock(formalState,block.id,block.review.revision,formal,formalState.dataRevision)
+  assert.equal(proposed.change?.status,'proposed');assert.deepEqual(proposed.state.items,formalState.items);assert.deepEqual(proposed.state.baselines,formalState.baselines)
+})
