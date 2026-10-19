@@ -1,0 +1,10 @@
+Running
+PASS original parsed into review candidates
+PASS confirmation does not change plan or baseline
+PASS scope-risk save opens change review without applying a task
+PASS submitted candidate retains a review continuation link
+PASS continuation link reopens the saved change
+PASS normalised internal task is saved and shown as a timeline bar
+PASS internal save does not approve or rewrite a baseline
+PASS timeline task survives page reload
+DONE frame-project:0212cff8-2f4a-40a0-ac6f-91aa30fd7345

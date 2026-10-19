@@ -76,3 +76,7 @@ Week 2 cutoff is October 19, 2026 at 06:59 UTC (02:59 in Toronto). Keep later ma
 | Post-deadline commit | Date (UTC) | Change | Included in submitted demo? |
 | --- | --- | --- | --- |
 | None recorded when this section was prepared | — | Add a row for each future post-deadline commit | — |
+
+## Review-to-timeline follow-up
+
+On `fix/review-to-timeline`, saving an internal work item opens Plan; saving a scope-risk proposal opens its change review. Previously submitted suggestions retain links to the saved change or task. Undated tasks remain listed without an invented date bar. `/tests/review-timeline.html` checks this path with a labelled synthetic project. This is a follow-up to the frozen v1 candidate, which remains unchanged. Direct creation by clicking/dragging an empty timeline is still outside this fix.

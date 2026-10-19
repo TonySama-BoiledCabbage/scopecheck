@@ -4,7 +4,7 @@ import { editBlock } from './domain/capture.ts'
 import { updateProject } from './domain/projects.ts'
 import { importFiles, captureText, retrySource, extractWithOllama, useIngest } from './lib/ingest.ts'
 import { getOriginal } from './lib/media-db.ts'
-import type { Item, Decision } from './domain/model.ts'
+import { ItemSchema, type Item, type Decision } from './domain/model.ts'
 import './adapter.css'
 import { frame } from './frame.ts'
 import { clearDemoSamples, restoreDemoSamples, DEMO_RECOVERY } from './demo-reset.ts'
@@ -24,6 +24,7 @@ function close(){ $('#detailDrawer').classList.remove('open');$('#detailDrawer')
 function selectProject(key:string){openProject(key);history.replaceState(null,'',`#project/${encodeURIComponent(key)}`)}
 function drawer(title:string,html:string){$('#drawerEyebrow').textContent=title;$('#drawerBody').innerHTML=html;$('#detailDrawer').classList.add('open');$('#detailDrawer').setAttribute('aria-hidden','false');$('#drawerBody input, #drawerBody button')?.focus()}
 function nav(view:string){$('#searchPopover').classList.remove('open');document.querySelectorAll<HTMLElement>('.view').forEach(x=>x.classList.toggle('active',x.dataset.view===view));document.querySelectorAll<HTMLElement>('.rail-item').forEach(x=>x.classList.toggle('active',x.dataset.nav===view));window.scrollTo(0,0)}
+function projectPanel(panel:string){document.querySelectorAll<HTMLElement>('[data-project-content]').forEach(x=>x.classList.toggle('active',x.dataset.projectContent===panel));document.querySelectorAll<HTMLElement>('[data-project-panel]').forEach(x=>x.classList.toggle('active',x.dataset.projectPanel===panel))}
 function on(id:string,fn:()=>unknown){document.getElementById(id)!.onclick=()=>void action(fn)}
 let pending=false
 async function action(fn:()=>unknown){if(pending)return;pending=true;try{await fn()}catch(e){const msg=e instanceof Error?e.message:String(e);const error=document.getElementById('formError');if(error)error.textContent=msg;notice(msg)}finally{pending=false}}
@@ -41,8 +42,13 @@ function taskEditor(id?:string,blockId?:string){
     const f=formData(),next={...item,title:String(f.get('title')),kind:String(f.get('kind')) as Item['kind'],phase:String(f.get('phase')) as Item['phase'],status:String(f.get('status')) as Item['status'],start:String(f.get('start'))||null,end:String(f.get('end'))||null,remainingDays:f.get('remainingDays')===''?null:Number(f.get('remainingDays')),goal:String(f.get('goal')),scopeRisk:f.has('scopeRisk')}
     if(b)await frame.commit(b.id,b.review.revision,next,s.dataRevision,session)
     else await frame.saveTask(next,original,session)
-    const saved=session.read().items.some(i=>JSON.stringify(i)===JSON.stringify(next))
-    render();close();notice(saved?'任务已保存到本机':'变更提议已保存，计划与基线未改变')
+    const after=session.read(),normalized=ItemSchema.parse(next)
+    const saved=after.items.find(i=>i.id===next.id&&JSON.stringify(i)===JSON.stringify(normalized))
+    const change=latestChanges(after).find(c=>c.proposed.kind==='item'&&c.proposed.item.id===next.id&&['proposed','pending'].includes(c.status))
+    if(!saved&&!change)throw Error('未找到已保存的任务或变更提议，请保留输入并重试。')
+    render();close();nav('project')
+    if(saved){projectPanel('plan');notice(saved.start||saved.end?'任务已保存，已打开时间轴。':'任务已保存；尚未排期，请填写日期后显示时间条。')}
+    else{projectPanel('changes');changeEditor(change!.id);notice('已保存为待审变更，审核应用前不会进入正式时间轴。')}
   })
 }
 function projectEditor(fresh=false){
@@ -53,7 +59,8 @@ function projectEditor(fresh=false){
 function reviewEditor(id:string){
   const session=projectSession(),b=session.read().blocks.find(x=>x.id===id)!
   const source=session.read().sources.find(x=>x.id===b.sourceId)!
-  drawer('REQUIREMENT · FRAME',`<h2 data-no-i18n="true">${esc(b.title)}</h2><p>${esc(b.engine==='rules'?'规则整理（非 AI）':b.engine==='ollama'?'Ollama 本地 AI 候选':'人工整理')} · ${esc(b.review.status)}</p><div class="detail-source">${userText(source.name)} · <span>${esc(b.evidence.locator)}</span></div><blockquote>${esc(b.evidence.text)}</blockquote><form id="frameForm" class="center-form">${field('标题','title',b.title)}<label>需求说明<textarea name="description">${esc(b.description)}</textarea></label><p ${b.uncertainties.length?'data-no-i18n="true"':''}>${b.uncertainties.map(esc).join('<br>')||'无规则识别的不确定项；仍需人工核对。'}</p><label><input type="checkbox" name="ack">已逐条核对不确定项；此操作不批准日期、额度或范围</label></form>${errorSlot}<div class="drawer-actions">${!b.commit?'<button id="editBlock">保存修正</button><button id="confirmBlock">确认内容</button><button id="dismissBlock">移除建议</button>':''}${b.review.status==='confirmed'&&!b.commit?'<button id="commitBlock">落实到工作项</button>':''}<button data-source="${esc(source.id)}">查看原件</button></div>`)
+  const committedItem=b.commit&&session.read().items.find(i=>i.id===b.commit!.itemId)
+  drawer('REQUIREMENT · FRAME',`<h2 data-no-i18n="true">${esc(b.title)}</h2><p>${esc(b.engine==='rules'?'规则整理（非 AI）':b.engine==='ollama'?'Ollama 本地 AI 候选':'人工整理')} · ${esc(b.review.status)}</p><div class="detail-source">${userText(source.name)} · <span>${esc(b.evidence.locator)}</span></div><blockquote>${esc(b.evidence.text)}</blockquote><form id="frameForm" class="center-form">${field('标题','title',b.title)}<label>需求说明<textarea name="description">${esc(b.description)}</textarea></label><p ${b.uncertainties.length?'data-no-i18n="true"':''}>${b.uncertainties.map(esc).join('<br>')||'无规则识别的不确定项；仍需人工核对。'}</p><label><input type="checkbox" name="ack">已逐条核对不确定项；此操作不批准日期、额度或范围</label></form>${errorSlot}<div class="drawer-actions">${!b.commit?'<button id="editBlock">保存修正</button><button id="confirmBlock">确认内容</button><button id="dismissBlock">移除建议</button>':''}${b.review.status==='confirmed'&&!b.commit?'<button id="commitBlock">落实到工作项</button>':''}${b.commit?.changeId?`<button data-change-id="${esc(b.commit.changeId)}">查看变更审查</button>`:''}${committedItem?`<button data-task-id="${esc(committedItem.id)}">查看已创建任务</button><button data-open-plan>查看时间轴</button>`:''}<button data-source="${esc(source.id)}">查看原件</button></div>`)
   if(b.commit)return
   on('editBlock',async()=>{const f=formData();await session.run(s=>editBlock(s,id,b.review.revision,String(f.get('title')),String(f.get('description'))));render();reviewEditor(id);notice('修正已保存，重新待审')})
   on('confirmBlock',async()=>{const f=formData();if(String(f.get('title'))!==b.title||String(f.get('description'))!==b.description)throw Error('请先保存修正，再确认内容。');await frame.review(id,b.review.revision,'confirmed',f.has('ack'),session);render();reviewEditor(id);notice('需求内容已确认，计划与基线未改变')})
@@ -62,7 +69,8 @@ function reviewEditor(id:string){
 }
 function changeEditor(id:string){
   const session=projectSession(),c=latestChanges(session.read()).find(c=>c.id===id)!
-  drawer('CHANGE REVIEW · FRAME',`<h2>正式变更审查</h2><p ${c.proposed.kind==='item'?'data-no-i18n="true"':''}>${esc(c.proposed.kind==='item'?c.proposed.item.title:c.proposed.kind==='delivery'?`交付日 → ${c.proposed.date}`:'额度规则')}</p><p>${esc(c.outcome)}</p><p>日期差：${esc(c.assessment.deltaDays??'无法估算')} 天<br>${c.assessment.warnings.map(esc).join('<br>')}</p><p>原基线 V${c.assessment.baseline.version} · 额度已用 ${c.assessment.consumed} · 待确认 ${c.assessment.pending} · 剩余 ${esc(c.assessment.remaining??'未知')}</p><form id="frameForm" class="center-form">${select('工期判断','duration',[['unknown','未知'],['unchanged','不变'],['changed','已调整']],c.decision?.duration??'unknown')}${field('调整后总自然日','durationDays',c.decision?.durationDays,'number')}${select('修改额度','allowance',[['unknown','待确认'],['no','不消耗'],['yes','消耗']],c.decision?.allowance??'unknown')}${field('轮次 / 计费单元','allowanceKey',c.decision?.allowanceKey)}${field('数量','units',c.decision?.units??1,'number')}${select('承诺状态','commitment',[['needs_confirmation','等待客户确认'],['internal','仅内部变更'],['approved','登记书面批准']],c.decision?.commitment??'needs_confirmation')}${field('判断理由','reason',c.decision?.reason)}${field('批准人','approvedBy',c.decision?.approvedBy)}${field('批准日期','approvedAt',c.decision?.approvedAt,'date')}<label>书面依据<textarea name="evidence">${esc(c.decision?.evidence)}</textarea></label>${field('相关来源','relatedSources',c.decision?.relatedSources)}<label><input type="checkbox" name="manualReview">已人工核查估算与影响</label><label><input type="checkbox" name="scopeAuthorized">已核对范围的独立合同授权</label></form>${errorSlot}<div class="drawer-actions">${['proposed','pending'].includes(c.status)?'<button id="decideChange">提交审查</button><button id="refreshChange">重新评估</button><button id="withdrawChange">撤回</button>':''}<button data-frame-close>关闭</button></div>`)
+  const appliedItemId=c.proposed.kind==='item'?c.proposed.item.id:null
+  drawer('CHANGE REVIEW · FRAME',`<h2>正式变更审查</h2><p ${c.proposed.kind==='item'?'data-no-i18n="true"':''}>${esc(c.proposed.kind==='item'?c.proposed.item.title:c.proposed.kind==='delivery'?`交付日 → ${c.proposed.date}`:'额度规则')}</p><p>${esc(c.outcome)}</p><p>日期差：${esc(c.assessment.deltaDays??'无法估算')} 天<br>${c.assessment.warnings.map(esc).join('<br>')}</p><p>原基线 V${c.assessment.baseline.version} · 额度已用 ${c.assessment.consumed} · 待确认 ${c.assessment.pending} · 剩余 ${esc(c.assessment.remaining??'未知')}</p><form id="frameForm" class="center-form">${select('工期判断','duration',[['unknown','未知'],['unchanged','不变'],['changed','已调整']],c.decision?.duration??'unknown')}${field('调整后总自然日','durationDays',c.decision?.durationDays,'number')}${select('修改额度','allowance',[['unknown','待确认'],['no','不消耗'],['yes','消耗']],c.decision?.allowance??'unknown')}${field('轮次 / 计费单元','allowanceKey',c.decision?.allowanceKey)}${field('数量','units',c.decision?.units??1,'number')}${select('承诺状态','commitment',[['needs_confirmation','等待客户确认'],['internal','仅内部变更'],['approved','登记书面批准']],c.decision?.commitment??'needs_confirmation')}${field('判断理由','reason',c.decision?.reason)}${field('批准人','approvedBy',c.decision?.approvedBy)}${field('批准日期','approvedAt',c.decision?.approvedAt,'date')}<label>书面依据<textarea name="evidence">${esc(c.decision?.evidence)}</textarea></label>${field('相关来源','relatedSources',c.decision?.relatedSources)}<label><input type="checkbox" name="manualReview">已人工核查估算与影响</label><label><input type="checkbox" name="scopeAuthorized">已核对范围的独立合同授权</label></form>${errorSlot}<div class="drawer-actions">${['proposed','pending'].includes(c.status)?'<button id="decideChange">提交审查</button><button id="refreshChange">重新评估</button><button id="withdrawChange">撤回</button>':''}${appliedItemId&&session.read().items.some(i=>i.id===appliedItemId)?'<button data-open-plan>查看时间轴</button>':''}<button data-frame-close>关闭</button></div>`)
   if(!['proposed','pending'].includes(c.status))return
   on('decideChange',async()=>{const f=formData();await frame.decide(id,{duration:f.get('duration'),durationDays:f.get('durationDays')===''?null:Number(f.get('durationDays')),allowance:f.get('allowance'),allowanceKey:f.get('allowanceKey'),units:Number(f.get('units')),commitment:f.get('commitment'),reason:f.get('reason'),evidence:f.get('evidence'),approvedBy:f.get('approvedBy'),approvedAt:f.get('approvedAt')||null,relatedSources:f.get('relatedSources'),manualReview:f.has('manualReview'),scopeAuthorized:f.has('scopeAuthorized')} as Decision,session);render();changeEditor(id);notice(latestChanges(session.read()).find(c=>c.id===id)!.outcome)})
   on('refreshChange',async()=>{await session.run(s=>refreshChange(s,id).state);render();changeEditor(id)})
@@ -171,7 +179,8 @@ document.addEventListener('click',event=>{
   const d=el.dataset,text=el.textContent??''
   let fn:(()=>unknown)|undefined
   if(d.nav)fn=()=>nav(d.nav!)
-  else if(d.projectPanel)fn=()=>{document.querySelectorAll<HTMLElement>('[data-project-content]').forEach(x=>x.classList.toggle('active',x.dataset.projectContent===d.projectPanel));document.querySelectorAll<HTMLElement>('[data-project-panel]').forEach(x=>x.classList.toggle('active',x===el))}
+  else if(d.projectPanel)fn=()=>projectPanel(d.projectPanel!)
+  else if('openPlan' in d)fn=()=>{close();nav('project');projectPanel('plan')}
   else if(d.projectKey)fn=()=>{selectProject(d.projectKey!);render();close();nav('project')}
   else if(d.taskId)fn=()=>taskEditor(d.taskId)
   else if(d.blockId)fn=()=>reviewEditor(d.blockId!)

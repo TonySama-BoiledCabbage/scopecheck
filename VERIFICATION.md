@@ -1,5 +1,12 @@
 # 验证结果
 
+## View → Create Work Item → 时间轴
+
+修复保存后没有继续路径的问题：实际落地的内部任务进入项目 Plan，保留未排期提示；范围风险提议进入 Changes 并打开对应审查。需求详情保留已有变更/任务的继续入口。保存结果按领域 schema 规范化后核对，避免标题空白清理造成“保存成功却被提示为提议”的误判。原领域规则不改，待审范围提议不会进入正式计划。
+
+新增 `/tests/review-timeline.html` 可重复测试真实原文保存/解析、UI 确认、提议保存、继续审查、内部任务保存、时间轴显示及刷新持久化。8项检查通过；检查在5190创建了两个明确标记为 Review timeline regression / Synthetic verification only 的测试项目，原项目未修改。37项现有测试、类型检查、构建通过。证据：`verification/review-to-timeline.txt`、`verification/review-to-timeline.png`。候选标签 v1 未移动，本修复在独立 fix/review-to-timeline 分支。
+
+
 ## 交互回归修复
 
 本地 AI 检测不再占用项目写入锁，导航和关闭操作不被异步检测吞掉；搜索 Enter 打开匹配结果、ArrowDown 聚焦结果、Escape/空查询/页面切换收起搜索层；表单输入 Enter 触发原保存与校验，文本域仍保留换行。恢复原通知入口，绑定当前项目真实待审数并打开审核页；顶部语言、本地 AI、通知、捕捉按钮在窄窗口保持可达。隐藏没有接入的原型专注计时。

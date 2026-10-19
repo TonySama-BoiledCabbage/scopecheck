@@ -30,7 +30,7 @@ Report true/false positives/negatives, precision, recall and F1 with the actual 
 
 | Priority | Change | Acceptance evidence |
 | --- | --- | --- |
-| P0 | Record and reproduce direct timeline creation failure | User reproduction plus a task visible after save/reload; formal nodes still require domain review. Deferred for submission. |
+| P0 | Review-to-work-item save routing fixed on `fix/review-to-timeline`; direct empty-timeline creation still deferred | User reproduction plus a task visible after save/reload; formal nodes still require domain review. Deferred for submission. |
 | P1 | Human-review labelled data, expand beyond this smoke set, establish baseline | Measured full-path confusion matrix, omissions and false positives listed; independent held-out set. |
 | P2 | Compare prompt/guard changes one at a time | Same model/data/hardware; full-path recall and precision compared; no loss of evidence/approval invariants. |
 | P3 | Compare a stronger already-installed model if resources allow | Same held-out data, latency/memory trade-off recorded. Do not auto-download models or make a new default from one demo. |

@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Review to timeline regression</title>
+<button id="run">Run review-to-timeline check (creates a labelled test project)</button><pre id="report">Ready</pre>
+<iframe id="app" title="Review workflow under test" style="width:100%;height:800px"></iframe>
+<script type="module">
+import {frame} from '/src/frame.ts';
+import {captureText} from '/src/lib/ingest.ts';
+import {latestChanges} from '/src/domain/engine.ts';
+const f=document.querySelector('#app'),report=document.querySelector('#report');
+const wait=async test=>{for(let i=0;i<150;i++){if(test())return;await new Promise(r=>setTimeout(r,100))}throw Error('Timed out')};
+const check=(value,message)=>{if(!value)throw Error(message);report.textContent+='\nPASS '+message};
+const tick=()=>new Promise(r=>setTimeout(r,0));
+document.querySelector('#run').onclick=async()=>{
+ report.textContent='Running';
+ try{
+  const key=await frame.createProject({name:'Review timeline regression '+new Date().toISOString(),client:'Synthetic verification only',start:'2026-10-19'});frame.openProject(key);
+  await captureText('Please estimate an additional charging pad.\nPlease prepare an internal review checklist.','en');
+  const state=()=>{frame.openProject(key);return frame.read()};
+  check(state().blocks.length>=2,'original parsed into review candidates');
+  const baseline=JSON.stringify(state().baselines),ids=state().blocks.slice(0,2).map(b=>b.id);
+  f.src='/#project/'+encodeURIComponent(key);await wait(()=>f.contentDocument.querySelector('#localAiButton'));await tick();
+  const d=()=>f.contentDocument,$=s=>d().querySelector(s);
+  const openReview=async id=>{
+   $('.rail-item[data-nav="reviews"]').click();$('#reviewEngine').value='all';$('#reviewEngine').dispatchEvent(new f.contentWindow.Event('change',{bubbles:true}));
+   $(`[data-block-id="${id}"]`).click();await tick();
+  };
+  await openReview(ids[0]);$('#frameForm input[name="ack"]').click();$('#confirmBlock').click();await wait(()=>$('#commitBlock'));await tick();
+  check(state().items.length===0&&JSON.stringify(state().baselines)===baseline,'confirmation does not change plan or baseline');
+  $('#commitBlock').click();await tick();$('#saveTask').click();await wait(()=>$('#decideChange'));await tick();
+  check(latestChanges(state())[0].status==='proposed'&&state().items.length===0,'scope-risk save opens change review without applying a task');
+  $('[data-frame-close]').click();await openReview(ids[0]);
+  check(!!$('#drawerBody [data-change-id]'),'submitted candidate retains a review continuation link');
+  $('#drawerBody [data-change-id]').click();await tick();check(!!$('#decideChange'),'continuation link reopens the saved change');
+  $('[data-frame-close]').click();await openReview(ids[1]);$('#frameForm input[name="ack"]').click();$('#confirmBlock').click();await wait(()=>$('#commitBlock'));await tick();$('#commitBlock').click();await tick();
+  $('#frameForm input[name="title"]').value='  Internal review checklist  ';$('#frameForm input[name="scopeRisk"]').click();
+  $('#frameForm input[name="start"]').value='2026-10-20';$('#frameForm input[name="end"]').value='2026-10-21';$('#saveTask').click();
+  await wait(()=>!$('#detailDrawer').classList.contains('open')&&$('#planPanel').classList.contains('active'));
+  const task=state().items.find(i=>i.title==='Internal review checklist');
+  check(!!task&&!!$(`.roadbar[data-task-id="${task.id}"]`),'normalised internal task is saved and shown as a timeline bar');
+  check(JSON.stringify(state().baselines)===baseline,'internal save does not approve or rewrite a baseline');
+  const oldDocument=d();f.contentWindow.location.reload();await wait(()=>f.contentDocument!==oldDocument&&f.contentDocument.querySelector('#localAiButton'));await tick();
+  $(`.project-card[data-project-key="${key}"]`).click();await tick();
+  check(!!$(`.roadbar[data-task-id="${task.id}"]`),'timeline task survives page reload');
+  report.textContent+='\nDONE '+key;
+ }catch(e){report.textContent+='\nFAIL '+e.message}
+};
+</script></html>
