@@ -4,6 +4,7 @@ export type Language='en'|'zh'
 let language:Language='en'
 export const getLanguage=()=>language
 const additions:[string,string][]=[
+  ['清空演示样例（可恢复）','Clear Demo Samples (Recoverable)'],['清空演示样例','Clear Demo Samples'],['清空上述样例（可恢复）','Clear Listed Samples (Recoverable)'],['恢复上次样例备份','Restore Previous Samples'],['以下项目将从展示中清空，替换为一个空白项目。本机保留恢复备份和原件；不会删除模型。','The listed projects will be replaced with one empty project. A local recovery backup and originals will be retained. Installed models are kept.'],['样例已清空，空白项目已保存；可在本地 AI 中恢复备份。','Samples cleared and an empty project saved. Restore the backup from Local AI.'],['样例备份已恢复。','Sample backup restored.'],
   ['日视图','Day'],['周视图','Week'],['月视图','Month'],['上一个周期','Previous period'],['下一个周期','Next period'],['当天暂无已排期工作项','No scheduled work items on this day'],
   ['打开项目资料，选择原件后点击 Ollama 整理。','Open project materials, select an original, then choose Organise with Ollama.'],['本地模型不可用','Local model unavailable'],['本地模型：','Local models:'],['本地 AI','Local AI'],
   ['当前项目的日期范围；未设置小时排期。','Date ranges for the current project. No hourly appointments.'],['上一周','Previous week'],['下一周','Next week'],['选择日期','Choose date'],['今天','Today'],['未定结束日期','No end date'],['未排期','Unscheduled'],['未定','Not set'],
