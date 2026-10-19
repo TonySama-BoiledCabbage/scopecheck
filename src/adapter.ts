@@ -143,16 +143,26 @@ function render(){
   $('#profileView .page-heading h1').textContent='本机工作空间';$('#profileView .page-heading p').textContent=aiStatus;$('#profileView .profile-grid').innerHTML=`<article class="panel settings-card"><h2>本地服务</h2><p data-no-i18n="true">Ollama · http://127.0.0.1:11434</p><p>本地模型： <span data-no-i18n="true">${models.length?models.map(esc).join(' · '):'—'}</span></p><button id="detectAi"><span>${esc(aiStatus)}</span><b>重新检测 →</b></button><button id="exportData"><span>导出当前项目元数据</span><b>JSON →</b></button><button id="clearDemoSamples"><span>清空演示样例（可恢复）</span><b>→</b></button>${localStorage.getItem(DEMO_RECOVERY)?'<button id="restoreDemoSamples">恢复上次样例备份</button>':''}<p>打开项目资料，选择原件后点击 Ollama 整理。</p><p>原件请在项目资料中单独下载。聊天、邮箱、账户与计时服务尚未接入。</p></article>`
 }
 
+const isClearCommand=(value:string)=>value.trim().toLowerCase()==='/clear'
+async function clearWorkspace(keys=listProjects().map(p=>p.key)){
+  if(useIngest.getState().busy)throw Error('正在保存原件，请等待处理结束。')
+  await clearDemoSamples(keys)
+  ;($('#captureText') as HTMLTextAreaElement).value='';fileInput.value='';$('#analysisPreview').textContent=''
+  ;($('#globalSearch') as HTMLInputElement).value='';$('#searchPopover').classList.remove('open')
+  $('#captureModal').classList.remove('open');$('#captureModal').setAttribute('aria-hidden','true')
+  reviewEngine='ollama';captureEngine='ollama';selectProject('frame-project-v1');render();close();nav('home')
+  notice('样例已清空，空白项目已保存；可在本地 AI 中恢复备份。')
+}
 function clearSamplesEditor(){
   if(useIngest.getState().busy)throw Error('正在保存原件，请等待处理结束。')
   const entries=listProjects()
   drawer('LOCAL DEMO',`<h2>清空演示样例</h2><p>以下项目将从展示中清空，替换为一个空白项目。本机保留恢复备份和原件；不会删除模型。</p><ul>${entries.map(p=>`<li>${userText(p.state?.project.name??p.key)}</li>`).join('')}</ul>${errorSlot}<div class="drawer-actions"><button id="confirmClearSamples">清空上述样例（可恢复）</button><button data-frame-close>取消</button></div>`)
-  on('confirmClearSamples',async()=>{await clearDemoSamples(entries.map(p=>p.key));($('#captureText') as HTMLTextAreaElement).value='';fileInput.value='';$('#analysisPreview').textContent='';selectProject('frame-project-v1');render();close();nav('home');notice('样例已清空，空白项目已保存；可在本地 AI 中恢复备份。')})
+  on('confirmClearSamples',()=>clearWorkspace(entries.map(p=>p.key)))
 }
 
 async function detectAi(){models=[];try{const r=await fetch('/api/local-ai/models',{headers:{'X-Frame-Parser':'local-v1'}});const v=await r.json();if(!r.ok)throw Error(v.error||'本地 AI 不可用');models=v.models;aiStatus=models.length?`Ollama 可用 · ${models.length} 个本地模型`:'Ollama 不可用：未发现已安装的本地模型'}catch(e){aiStatus='Ollama 不可用：'+(e instanceof Error?e.message:String(e))}render()}
 function chooseProject(){drawer('PROJECTS',`<h2>选择项目</h2>${listProjects().map(p=>`<button class="project-row" data-project-key="${esc(p.key)}">${p.state?userText(p.state.project.name):esc(p.error)}</button>`).join('')}`)}
-function search(){const input=$('#globalSearch') as HTMLInputElement,q=input.value.toLowerCase();$('#searchPopover').innerHTML=[...listProjects().filter(p=>p.state&&p.state.project.name.toLowerCase().includes(q)).map(p=>`<button class="search-result" data-project-key="${esc(p.key)}">项目 · ${userText(p.state!.project.name)}</button>`),...state().items.filter(x=>x.title.toLowerCase().includes(q)).map(x=>`<button class="search-result" data-task-id="${esc(x.id)}">任务 · ${userText(x.title)}</button>`),...state().blocks.filter(x=>x.title.toLowerCase().includes(q)).map(x=>`<button class="search-result" data-block-id="${esc(x.id)}">需求 · ${userText(x.title)}</button>`)].join('')||'<p>无匹配结果</p>';$('#searchPopover').classList.add('open')}
+function search(){const input=$('#globalSearch') as HTMLInputElement,q=input.value.toLowerCase();if(q.trim().startsWith('/')){$('#searchPopover').innerHTML='/clear'.startsWith(q.trim())?`<button class="search-result" data-web-clear ${pending||useIngest.getState().busy?'disabled':''}>/clear · 清空网页测试数据（可恢复）</button>`:'<p>仅支持 /clear 网页命令</p>';$('#searchPopover').classList.add('open');return;}$('#searchPopover').innerHTML=[...listProjects().filter(p=>p.state&&p.state.project.name.toLowerCase().includes(q)).map(p=>`<button class="search-result" data-project-key="${esc(p.key)}">项目 · ${userText(p.state!.project.name)}</button>`),...state().items.filter(x=>x.title.toLowerCase().includes(q)).map(x=>`<button class="search-result" data-task-id="${esc(x.id)}">任务 · ${userText(x.title)}</button>`),...state().blocks.filter(x=>x.title.toLowerCase().includes(q)).map(x=>`<button class="search-result" data-block-id="${esc(x.id)}">需求 · ${userText(x.title)}</button>`)].join('')||'<p>无匹配结果</p>';$('#searchPopover').classList.add('open')}
 
 // Capture only data actions before prototype demo handlers can report false success.
 document.addEventListener('click',event=>{
@@ -188,6 +198,7 @@ document.addEventListener('click',event=>{
 
   else if(el.matches('.board-panel .primary-button,#calendarView .page-heading .primary-button'))fn=()=>taskEditor()
   else if(el.matches('.project-summary .icon-button'))fn=()=>projectEditor()
+  else if('webClear' in d)fn=()=>clearWorkspace()
   else if(el.id==='clearDemoSamples')fn=clearSamplesEditor
   else if(el.id==='restoreDemoSamples')fn=async()=>{await restoreDemoSamples();selectProject('frame-project-v1');render();notice('样例备份已恢复。')}
   else if(el.id==='localAiButton')fn=async()=>{nav('profile');await detectAi()}
@@ -202,6 +213,12 @@ document.addEventListener('click',event=>{
 },true)
 document.addEventListener('change',event=>{const input=event.target as HTMLInputElement;if(input.id==='captureEngine'){captureEngine=input.value==='rules'?'rules':'ollama';render();return;}if(input.id==='reviewEngine'){reviewEngine=input.value;render();return;}if(input.id==='calendarDate'){if(input.value){calendarDate=input.value;render()}return;}if(!input.dataset.taskToggle)return;event.stopImmediatePropagation();const original=state().items.find(x=>x.id===input.dataset.taskToggle)!;void action(async()=>{try{const next=await frame.saveTask({...original,status:input.checked?'done':'planned'},original);notice(next.items.find(x=>x.id===original.id)?.status===(input.checked?'done':'planned')?'任务状态已保存':'已记录变更提议；任务状态未变')}finally{render()}})},true)
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target as HTMLElement).dataset.taskId){e.preventDefault();taskEditor((e.target as HTMLElement).dataset.taskId)}if(e.key==='Escape'){close();if(!useIngest.getState().busy)$('#captureModal').classList.remove('open')}})
+$('#globalSearch').addEventListener('keydown',event=>{
+  if(event.key!=='Enter'||!isClearCommand((event.target as HTMLInputElement).value))return
+  event.preventDefault();event.stopImmediatePropagation()
+  if(pending||useIngest.getState().busy){notice('正在处理，请稍后再清空。');return}
+  void action(()=>clearWorkspace())
+},true)
 $('#globalSearch').addEventListener('input',e=>{e.stopImmediatePropagation();search()},true);$('#globalSearch').addEventListener('focus',e=>{e.stopImmediatePropagation();search()},true)
 document.addEventListener('submit',e=>e.preventDefault())
 useIngest.subscribe((x,previous)=>{if(x.busy)$('#analysisPreview').textContent=x.progress;else if(x.error)$('#analysisPreview').textContent=x.error;const progress=document.getElementById('sourceAiProgress');if(progress)progress.textContent=x.busy?x.progress:x.error;const reviewProgress=document.getElementById('reviewProgress');if(reviewProgress)reviewProgress.textContent=x.busy?x.progress:x.error;if(previous.busy&&!x.busy)render()})
@@ -217,5 +234,6 @@ try{const key=location.hash.match(/^#project\/([^/]+)/)?.[1];if(key)openProject(
 const localAiButton=document.createElement('button');localAiButton.id='localAiButton';localAiButton.className='language-switch';localAiButton.textContent='本地 AI';localAiButton.setAttribute('aria-label','本地 AI');$('.top-actions').prepend(localAiButton)
 window.addEventListener('scopecheck-language',render)
 ;($('#captureText') as HTMLTextAreaElement).value=''
+$('#globalSearch').setAttribute('placeholder','搜索项目、任务… 或输入 /clear')
 render();initI18n();void detectAi()
 

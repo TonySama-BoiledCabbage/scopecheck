@@ -1,3 +1,7 @@
+## Web demo reset
+
+Type `/clear` in the top search box, then press Enter or click the command suggestion. This resets projects and drafts in the current browser origin to one empty project. Use **Local AI → Restore Previous Samples** to restore the latest reset; earlier recovery records remain available. Recovery refuses to overwrite new work, and a backup quota failure prevents the reset. Original files, language preference and Ollama models are retained. This is a web command, not a terminal command.
+
 ## Current local AI flow (supersedes earlier generation notes)
 
 Capture Context now defaults to **Ollama Local AI**, with an explicit model selector, connection status, Check Again button and **Save & Organise with Local AI** action. Rules remain a separate explicit choice, labelled **Original Segments (Rules, not AI)**. If no local model is available, the AI action is disabled; failed AI requests never silently become rule results.

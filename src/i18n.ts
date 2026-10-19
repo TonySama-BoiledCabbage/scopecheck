@@ -4,6 +4,7 @@ export type Language='en'|'zh'
 let language:Language='en'
 export const getLanguage=()=>language
 const additions:[string,string][]=[
+  ['搜索项目、任务… 或输入 /clear','Search projects, tasks… or type /clear'],['清空网页测试数据（可恢复）','Clear web demo data (recoverable)'],['仅支持 /clear 网页命令','Only the /clear web command is supported'],['正在处理，请稍后再清空。','Processing is in progress. Wait before clearing.'],
   ['原文片段（只读）','Original Segment (Read Only)'],['人工核对','Review Manually'],
   ['Ollama AI 筛选 · 原文摘录（含句式校验）','Ollama AI Selection · Source Excerpt + Wording Check'],['AI 筛选后摘录原文，含请求用语校验；候选仍需人工核对。','AI selects requests with a wording check; candidate content is quoted from the original and still needs human review.'],
   ['全部','All'],

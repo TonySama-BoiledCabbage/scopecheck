@@ -1,3 +1,7 @@
+## 网页清空命令
+
+在顶部搜索框输入 `/clear`，按回车或点击命令提示，立即清空当前浏览器来源内的全部项目与草稿，并留下一个空白项目。右上 **Local AI → Restore Previous Samples** 可恢复最近一次清空；重复清空会保留逐层恢复记录。已有新数据时拒绝覆盖恢复，备份空间不足时拒绝清空。原件保留在 IndexedDB，语言设置与本地 Ollama 模型不变。此命令只操作网页数据，不执行终端命令。
+
 ## 本地 AI 使用方式（当前版本）
 
 点击 **Capture Context → Processing method: Ollama Local AI → qwen2.5:1.5b → Save & Organise with Local AI**。已有原件可在 **Review → Organise Latest Original with Local AI** 重新筛选。AI 候选、人工整理、原文片段分别查看；失败不会自动改用规则整理。当前版本采用明确标识的“模型筛选＋句式校验＋原文摘录”，仍需人审。完整说明与真实限制见 `LOCAL_AI_GUIDE.md` 首节。
