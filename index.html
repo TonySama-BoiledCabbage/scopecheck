@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Frame — 面向独立设计师的 AI 项目管理原型" />
+    <title>Frame — Designer Workspace</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side-rail" aria-label="主导航">
+        <button class="brand" data-nav="home" aria-label="Frame 首页"><span>f</span></button>
+        <nav class="rail-nav">
+          <button class="rail-item active" data-nav="home" aria-label="首页"><span class="rail-icon">⌂</span><small>首页</small></button>
+          <button class="rail-item" data-nav="projects" aria-label="项目"><span class="rail-icon">▦</span><small>项目</small></button>
+          <button class="rail-item" data-nav="calendar" aria-label="时间"><span class="rail-icon">□</span><small>时间</small></button>
+          <button class="rail-item" data-nav="reviews" aria-label="待确认"><span class="rail-icon">◇</span><small>确认</small><i class="nav-dot">3</i></button>
+        </nav>
+        <button class="avatar" data-nav="profile" aria-label="个人设置">MC</button>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="search-wrap">
+            <span>⌕</span>
+            <input id="globalSearch" type="search" placeholder="搜索项目、任务、需求或来源…" autocomplete="off" />
+            <kbd>⌘ K</kbd>
+            <div class="search-popover" id="searchPopover"></div>
+          </div>
+          <div class="top-actions">
+            <button class="ghost-button notification-button" aria-label="通知">●<span>2</span></button>
+            <button class="primary-button" data-open-capture><b>＋</b> 捕捉新信息</button>
+          </div>
+        </header>
+
+        <section class="view active" id="homeView" data-view="home">
+          <div class="welcome-row">
+            <div>
+              <span class="eyebrow">SATURDAY · OCT 18</span>
+              <h1>欢迎回来，设计师 Maya。</h1>
+              <p>三个项目正在推进。先处理一项待确认要求，再进入今天的设计时间。</p>
+            </div>
+            <div class="focus-chip"><span class="pulse"></span><div><small>今日专注</small><strong>4h 30m</strong></div></div>
+          </div>
+
+          <section class="section-block project-section">
+            <div class="section-title-row">
+              <div><span class="eyebrow">RECENTLY UPDATED</span><h2>活跃项目</h2></div>
+              <button class="text-button" data-nav="projects">查看全部 6 个 <span>→</span></button>
+            </div>
+            <div class="project-grid">
+              <button class="project-card homesday" data-open-project="homesday">
+                <div class="project-card-top"><span class="project-type">PRODUCT · UI/UX</span><span class="new-pill">3 条新信息</span></div>
+                <div class="project-visual home-visual"><span class="mini-browser"></span><span class="mini-phone"></span><span class="floating-pin">⌖</span></div>
+                <div class="project-card-copy"><h3>Homesday App Design</h3><p>刚刚 · 客户更新了参考方向</p><div class="card-meta"><span>截止 Oct 24</span><span>需要确认 2</span></div></div>
+              </button>
+              <button class="project-card northline" data-open-project="northline">
+                <div class="project-card-top"><span class="project-type">BRAND SYSTEM</span><span class="time-pill">2h 前</span></div>
+                <div class="project-visual brand-visual"><b>N</b><i></i><em>northline</em></div>
+                <div class="project-card-copy"><h3>Northline Brand Refresh</h3><p>品牌手册已进入最后校对</p><div class="card-meta"><span>截止 Oct 29</span><span>进行中</span></div></div>
+              </button>
+              <button class="project-card orbit" data-open-project="orbit">
+                <div class="project-card-top"><span class="project-type">MOTION · SOCIAL</span><span class="new-pill purple">1 条新信息</span></div>
+                <div class="project-visual motion-visual"><span></span><span></span><span></span><strong>ORBIT</strong></div>
+                <div class="project-card-copy"><h3>Orbit Motion Campaign</h3><p>营销部新增了发布尺寸</p><div class="card-meta"><span>截止 Nov 02</span><span>等待排期</span></div></div>
+              </button>
+            </div>
+          </section>
+
+          <div class="dashboard-grid">
+            <section class="panel schedule-panel">
+              <div class="panel-head">
+                <div><span class="eyebrow">THIS WEEK</span><h2>时间安排</h2></div>
+                <div class="panel-actions"><button class="filter-button">全部项目⌄</button><button class="icon-button" data-nav="calendar">↗</button></div>
+              </div>
+              <div class="week-calendar compact-calendar">
+                <div class="calendar-corner"><span>GMT−4</span></div>
+                <div class="day-head"><small>MON</small><b>13</b></div>
+                <div class="day-head"><small>TUE</small><b>14</b></div>
+                <div class="day-head"><small>WED</small><b>15</b></div>
+                <div class="day-head"><small>THU</small><b>16</b></div>
+                <div class="day-head"><small>FRI</small><b>17</b></div>
+                <div class="day-head today"><small>SAT</small><b>18</b></div>
+                <div class="time-label t9">9 AM</div><div class="time-label t11">11 AM</div><div class="time-label t1">1 PM</div><div class="time-label t3">3 PM</div><div class="time-label t5">5 PM</div>
+                <div class="grid-lines"></div>
+                <button class="cal-event blue e-research" data-detail="research"><small>9:30–11:00</small><b>竞品与用户流</b><span>Homesday</span></button>
+                <button class="cal-event yellow e-logo" data-detail="logo"><small>11:30–1:00</small><b>Logo 精修</b><span>Northline</span></button>
+                <button class="cal-event blue e-map" data-detail="map"><small>2:00–4:00</small><b>地图预订流程</b><span>Homesday</span></button>
+                <button class="cal-event purple e-motion" data-detail="motion"><small>3:00–5:00</small><b>动态分镜</b><span>Orbit</span></button>
+                <button class="cal-event coral e-review" data-detail="review"><small>10:00–10:45</small><b>原型评审</b><span>Homesday · 客户</span></button>
+                <div class="now-line"><span></span></div>
+              </div>
+              <div class="project-legend"><span><i class="dot blue"></i>Homesday</span><span><i class="dot yellow"></i>Northline</span><span><i class="dot purple"></i>Orbit</span><button data-nav="calendar">打开完整日历 →</button></div>
+            </section>
+
+            <div class="stacked-column">
+              <section class="panel todo-panel">
+                <div class="panel-head compact"><div><span class="eyebrow">TODAY</span><h2>待办任务</h2></div><span class="count-badge">4</span></div>
+                <div class="task-list">
+                  <label class="task-item"><input type="checkbox" /><span class="custom-check"></span><span class="task-project blue"></span><span class="task-copy"><b>完成地图筛选状态</b><small>Homesday · 今天 2:00 PM</small></span></label>
+                  <label class="task-item"><input type="checkbox" /><span class="custom-check"></span><span class="task-project yellow"></span><span class="task-copy"><b>导出 Logo 方案 B</b><small>Northline · 今天</small></span></label>
+                  <label class="task-item"><input type="checkbox" checked /><span class="custom-check"></span><span class="task-project blue"></span><span class="task-copy"><b>整理客户会议记录</b><small>Homesday · 已完成</small></span></label>
+                  <label class="task-item"><input type="checkbox" /><span class="custom-check"></span><span class="task-project purple"></span><span class="task-copy"><b>确认社交视频比例</b><small>Orbit · 等待营销部</small></span></label>
+                </div>
+                <button class="panel-link" data-nav="projects">查看全部任务 <span>→</span></button>
+              </section>
+
+              <section class="panel changes-panel">
+                <div class="panel-head compact"><div><span class="eyebrow">NEEDS REVIEW</span><h2>变化与待确认</h2></div><span class="count-badge warm">3</span></div>
+                <button class="change-item" data-detail="airbnb"><span class="status-orb pending"></span><span><b>“参考 Airbnb 的整体感觉”</b><small>客户 · Teams · 需要明确参考范围</small></span><em>去确认</em></button>
+                <button class="change-item" data-detail="map"><span class="status-orb confirmed"></span><span><b>新增地图搜索</b><small>老板 · 已确认 · 影响移动端</small></span><em>查看</em></button>
+                <button class="change-item" data-detail="campaign"><span class="status-orb scope"></span><span><b>增加活动落地页视觉</b><small>营销部 · 可能超出原范围</small></span><em>去确认</em></button>
+                <button class="panel-link" data-nav="reviews">查看审核队列 <span>→</span></button>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="projectsView" data-view="projects">
+          <div class="page-heading"><div><span class="eyebrow">YOUR WORK</span><h1>项目</h1><p>最近有新信息的项目会自动排在前面。</p></div><button class="primary-button" data-open-capture>＋ 新建项目</button></div>
+          <div class="toolbar"><div class="segmented"><button class="active">进行中 6</button><button>暂停 1</button><button>已完成 12</button></div><button class="filter-button">最近更新⌄</button></div>
+          <div class="projects-list">
+            <button class="project-row" data-open-project="homesday"><span class="project-index blue-bg">01</span><span class="project-row-main"><b>Homesday App Design</b><small>UI/UX · Mobile · Web · Logo</small></span><span class="row-update"><b>3 条新信息</b><small>刚刚更新</small></span><span class="row-status attention">需要确认</span><span class="row-date">Oct 24</span><span>→</span></button>
+            <button class="project-row" data-open-project="northline"><span class="project-index yellow-bg">02</span><span class="project-row-main"><b>Northline Brand Refresh</b><small>Brand identity · Packaging</small></span><span class="row-update"><b>Logo 方案已确认</b><small>2 小时前</small></span><span class="row-status">进行中</span><span class="row-date">Oct 29</span><span>→</span></button>
+            <button class="project-row" data-open-project="orbit"><span class="project-index purple-bg">03</span><span class="project-row-main"><b>Orbit Motion Campaign</b><small>Motion · Social assets</small></span><span class="row-update"><b>1 条新信息</b><small>今天 9:30</small></span><span class="row-status attention">等待排期</span><span class="row-date">Nov 02</span><span>→</span></button>
+            <button class="project-row"><span class="project-index green-bg">04</span><span class="project-row-main"><b>Field Notes Portfolio</b><small>Website · Case studies</small></span><span class="row-update"><b>无新信息</b><small>昨天更新</small></span><span class="row-status">进行中</span><span class="row-date">Flexible</span><span>→</span></button>
+          </div>
+        </section>
+
+        <section class="view" id="calendarView" data-view="calendar">
+          <div class="page-heading"><div><span class="eyebrow">SCHEDULE</span><h1>时间线</h1><p>把项目期限和每天真正能投入的时间放在同一个视图里。</p></div><button class="primary-button">＋ 安排任务</button></div>
+          <div class="toolbar"><div class="segmented" id="calendarSegments"><button data-calendar-mode="day">日</button><button class="active" data-calendar-mode="week">周</button><button data-calendar-mode="month">月</button></div><div class="toolbar-right"><button class="filter-button">全部项目⌄</button><button class="filter-button">Oct 13–19⌄</button></div></div>
+          <section class="panel full-calendar-panel">
+            <div class="full-week" id="fullWeek">
+              <div class="calendar-corner"><span>GMT−4</span></div>
+              <div class="day-head"><small>MON</small><b>13</b></div><div class="day-head"><small>TUE</small><b>14</b></div><div class="day-head"><small>WED</small><b>15</b></div><div class="day-head"><small>THU</small><b>16</b></div><div class="day-head"><small>FRI</small><b>17</b></div><div class="day-head today"><small>SAT</small><b>18</b></div><div class="day-head"><small>SUN</small><b>19</b></div>
+              <div class="full-grid-lines"></div>
+              <div class="full-time-label ft8">8 AM</div><div class="full-time-label ft10">10 AM</div><div class="full-time-label ft12">12 PM</div><div class="full-time-label ft2">2 PM</div><div class="full-time-label ft4">4 PM</div><div class="full-time-label ft6">6 PM</div>
+              <button class="full-event blue fe1" data-detail="research"><small>9:00–11:00</small><b>竞品研究</b><span>Homesday</span></button>
+              <button class="full-event yellow fe2"><small>10:00–12:00</small><b>品牌规范</b><span>Northline</span></button>
+              <button class="full-event blue fe3" data-detail="map"><small>1:30–4:00</small><b>地图预订流程</b><span>Homesday</span></button>
+              <button class="full-event purple fe4"><small>2:00–5:00</small><b>动态分镜</b><span>Orbit</span></button>
+              <button class="full-event coral fe5" data-detail="review"><small>10:00–10:45</small><b>原型评审</b><span>Client</span></button>
+              <button class="full-event blue fe6"><small>11:30–1:00</small><b>调整响应式页面</b><span>Homesday</span></button>
+              <button class="full-event muted fe7"><small>3:30–4:30</small><b>整理本周文件</b><span>Personal</span></button>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="reviewsView" data-view="reviews">
+          <div class="page-heading"><div><span class="eyebrow">AI REVIEW QUEUE</span><h1>待确认</h1><p>AI 先理解信息，设计师再决定它是否成为任务、参考或范围变更。</p></div><button class="primary-button" data-open-capture>＋ 添加信息</button></div>
+          <div class="review-layout">
+            <section class="review-list-panel">
+              <button class="review-card selected" data-review="airbnb"><span class="status-orb pending"></span><span><small>客户 · Teams · 12 分钟前</small><b>参考 Airbnb 的界面设计</b><p>系统无法确定需要参考布局、字体、颜色还是交互。</p></span><em>需要澄清</em></button>
+              <button class="review-card" data-review="map"><span class="status-orb confirmed"></span><span><small>老板 · Meeting · 昨天</small><b>增加地图搜索与区域筛选</b><p>已确认，会影响移动端预订流程。</p></span><em>已确认</em></button>
+              <button class="review-card" data-review="campaign"><span class="status-orb scope"></span><span><small>营销部 · Outlook · 昨天</small><b>增加活动落地页视觉</b><p>原始基线中没有这一项。</p></span><em>范围变化</em></button>
+            </section>
+            <aside class="review-detail" id="reviewDetail"></aside>
+          </div>
+        </section>
+
+        <section class="view" id="projectView" data-view="project">
+          <button class="back-link" data-nav="home">← 返回首页</button>
+          <div class="project-hero-detail">
+            <div><span class="eyebrow">HOMESDAY CANADA · UI/UX</span><h1>Homesday App Design</h1><p>为加拿大留学生、中介与住宿合作方设计统一的预订体验。</p></div>
+            <div class="project-summary"><span><small>状态</small><b>进行中</b></span><span><small>截止</small><b>Oct 24</b></span><span><small>待确认</small><b>2 项</b></span><button class="icon-button">•••</button></div>
+          </div>
+          <nav class="project-tabs" id="projectTabs"><button class="active" data-project-panel="plan">计划</button><button data-project-panel="tasks">待办</button><button data-project-panel="changes">变化</button><button data-project-panel="baseline">基线</button></nav>
+
+          <div class="project-panel active" id="planPanel" data-project-content="plan">
+            <section class="panel roadmap-panel">
+              <div class="panel-head"><div><span class="eyebrow">PROJECT PLAN</span><h2>项目长时间轴</h2></div><button class="filter-button">按阶段⌄</button></div>
+              <div class="roadmap">
+                <div class="roadmap-dates"><span>Oct 06</span><span>Oct 13</span><span>Oct 20</span><span>Oct 27</span><span>Nov 03</span></div>
+                <div class="roadmap-row"><b>研究与定义</b><span class="roadbar rb1">竞品与用户流</span></div>
+                <div class="roadmap-row"><b>移动端</b><span class="roadbar rb2">核心预订流程</span><i class="milestone m1" title="原型评审"></i></div>
+                <div class="roadmap-row"><b>网页端</b><span class="roadbar rb3">响应式页面</span></div>
+                <div class="roadmap-row"><b>品牌与交付</b><span class="roadbar rb4">视觉规范</span><i class="milestone m2" title="交付"></i></div>
+              </div>
+            </section>
+
+            <section class="panel reference-lab">
+              <div class="panel-head"><div><span class="eyebrow">DESIGN INTELLIGENCE</span><h2>AI 参考工作台</h2></div><span class="ai-badge">✦ 已分析 Teams 链接</span></div>
+              <div class="reference-intro"><div><strong>客户发送了 Airbnb 网站</strong><p>系统识别出：圆角卡片、生活方式摄影、暖色调和地图＋列表的组合方式。</p></div><button class="text-button" data-detail="airbnb">查看原始要求 →</button></div>
+              <div class="reference-grid">
+                <article class="reference-card source-ref"><div class="fake-browser"><i></i><i></i><i></i><div class="source-photo"><span>airbnb</span></div><div class="source-lines"></div></div><div><span class="ref-tag">客户原始参考</span><b>Airbnb interface direction</b><small>来自 Teams · 10:42 AM</small></div></article>
+                <article class="reference-card"><div class="moodboard warm-board"><span></span><span></span><span></span></div><div><span class="ref-tag ai">AI 延伸</span><b>Warm editorial palette</b><small>色彩与影像氛围</small></div></article>
+                <article class="reference-card"><div class="moodboard layout-board"><span></span><span></span><span></span><span></span></div><div><span class="ref-tag ai">AI 延伸</span><b>Map + listing patterns</b><small>布局与信息层级</small></div></article>
+                <article class="reference-card"><div class="moodboard type-board"><b>Aa</b><span>Stay somewhere<br/>that feels yours.</span></div><div><span class="ref-tag ai">AI 延伸</span><b>Friendly typography</b><small>字体与语气建议</small></div></article>
+              </div>
+              <div class="ai-suggestion"><span>✦</span><div><b>建议下一步</b><p>先向客户确认需要参考的是布局、字体、配色还是交互，再将确认项加入设计任务。</p></div><button data-copy-message>复制澄清消息</button></div>
+            </section>
+          </div>
+
+          <div class="project-panel" id="tasksPanel" data-project-content="tasks">
+            <section class="panel board-panel"><div class="panel-head"><div><span class="eyebrow">WORKFLOW</span><h2>Homesday 待办</h2></div><button class="primary-button small">＋ 添加任务</button></div><div class="kanban">
+              <div class="kanban-col"><header><b>待安排</b><span>2</span></header><article><small>WEB</small><b>确认 Airbnb 参考范围</b><p>等待客户回复</p></article><article><small>MOBILE</small><b>AI 匹配功能定义</b><p>电话信息不完整</p></article></div>
+              <div class="kanban-col"><header><b>待完成</b><span>3</span></header><article><small>MOBILE</small><b>地图筛选状态</b><p>今天 · 2h</p></article><article><small>WEB</small><b>调整首页信息架构</b><p>Oct 20 · 3h</p></article></div>
+              <div class="kanban-col"><header><b>进行中</b><span>1</span></header><article class="active-card"><small>MOBILE</small><b>预订流程原型</b><p>已投入 1h 20m</p></article></div>
+              <div class="kanban-col"><header><b>已完成</b><span>4</span></header><article class="done-card"><small>RESEARCH</small><b>业务计划整理</b><p>Oct 14 完成</p></article></div>
+            </div></section>
+          </div>
+
+          <div class="project-panel" id="changesPanel" data-project-content="changes">
+            <section class="panel change-table-panel"><div class="panel-head"><div><span class="eyebrow">DECISIONS & CHANGES</span><h2>变化记录</h2></div><button class="filter-button">全部状态⌄</button></div>
+              <div class="change-table-head"><span>变化</span><span>来源</span><span>影响</span><span>状态</span></div>
+              <button class="change-table-row" data-detail="map"><span><b>新增地图搜索</b><small>加入区域与距离筛选</small></span><span>老板 · Meeting</span><span>移动端 · +2 天</span><em class="table-status confirmed">已确认</em></button>
+              <button class="change-table-row" data-detail="airbnb"><span><b>参考 Airbnb 视觉</b><small>具体参考范围不明确</small></span><span>客户 · Teams</span><span>暂不能评估</span><em class="table-status pending">待确认</em></button>
+              <button class="change-table-row" data-detail="campaign"><span><b>新增活动落地页</b><small>原始交付物中未包含</small></span><span>营销部 · Outlook</span><span>Web · 可能延期</span><em class="table-status scope">范围变化</em></button>
+            </section>
+          </div>
+
+          <div class="project-panel" id="baselinePanel" data-project-content="baseline">
+            <section class="baseline-grid"><article class="panel baseline-card"><span class="eyebrow">FORMAL BASELINE · V1</span><h2>原始约定</h2><dl><div><dt>交付物</dt><dd>移动端原型、响应式官网、基础 Logo</dd></div><div><dt>修改范围</dt><dd>每个阶段 2 轮整合反馈</dd></div><div><dt>目标用户</dt><dd>加拿大留学生</dd></div><div><dt>截止日期</dt><dd>2026 年 10 月 24 日</dd></div></dl><button class="panel-link">查看原始 PDF →</button></article><article class="panel baseline-card highlight"><span class="eyebrow">AI COMPARISON</span><h2>与当前要求的差异</h2><div class="delta"><b>＋</b><span><strong>中介与住宿合作方角色</strong><small>新增平台参与方</small></span></div><div class="delta"><b>＋</b><span><strong>地图搜索</strong><small>新增产品能力</small></span></div><div class="delta"><b>?</b><span><strong>活动落地页</strong><small>需要确认是否属于本期</small></span></div></article></section>
+          </div>
+        </section>
+
+        <section class="view" id="profileView" data-view="profile">
+          <div class="page-heading"><div><span class="eyebrow">ACCOUNT</span><h1>Maya Chen</h1><p>Independent product designer</p></div></div>
+          <div class="profile-grid"><article class="panel settings-card"><h2>工作空间</h2><button><span>连接的信息来源</span><b>Teams、Outlook、WhatsApp →</b></button><button><span>AI 服务</span><b>ChatGPT →</b></button><button><span>偏好设置</span><b>语言、时间与通知 →</b></button></article><article class="panel settings-card"><h2>账户</h2><button><span>计划与用量</span><b>在需要时查看 →</b></button><button><span>导出项目数据</span><b>本地备份 →</b></button></article></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="captureModal" aria-hidden="true">
+      <section class="capture-modal" role="dialog" aria-modal="true" aria-labelledby="captureTitle">
+        <header><div><span class="eyebrow">QUICK CAPTURE</span><h2 id="captureTitle">把零散信息交给 AI 整理</h2></div><button class="close-button" data-close-modal>×</button></header>
+        <div class="capture-tabs"><button class="active" data-capture-tab="note">文字 / 链接</button><button data-capture-tab="file">文件 / 图片</button></div>
+        <div class="capture-body active" data-capture-content="note"><textarea id="captureText" placeholder="粘贴客户消息、会议笔记或网页链接…">https://www.airbnb.ca/ — Client: “I like this overall style. Can we make Homesday feel similar?”</textarea></div>
+        <div class="capture-body" data-capture-content="file"><label class="drop-zone"><input type="file" multiple /><b>拖入截图、PDF、录音或视频</b><span>原件保存在本机，AI 只生成可审核建议。</span></label></div>
+        <div class="capture-target"><span>加入项目</span><button>Homesday App Design⌄</button></div>
+        <div class="analysis-preview" id="analysisPreview"><span>✦</span><div><b>准备识别</b><p>将区分：确定任务、待确认要求、参考信息与范围变化。</p></div></div>
+        <footer><button class="ghost-action" data-close-modal>取消</button><button class="primary-button" id="analyzeButton">✦ 分析并整理</button></footer>
+      </section>
+    </div>
+
+    <div class="detail-drawer" id="detailDrawer" aria-hidden="true"><button class="drawer-scrim" data-close-drawer aria-label="关闭"></button><aside><header><span class="eyebrow" id="drawerEyebrow">REQUIREMENT</span><button class="close-button" data-close-drawer>×</button></header><div id="drawerBody"></div></aside></div>
+    <div class="toast" id="toast">已复制</div>
+    <script src="app.js"></script>
+  </body>
+</html>
