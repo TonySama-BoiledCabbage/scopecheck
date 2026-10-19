@@ -147,7 +147,7 @@ document.addEventListener('change',event=>{const input=event.target as HTMLInput
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target as HTMLElement).dataset.taskId){e.preventDefault();taskEditor((e.target as HTMLElement).dataset.taskId)}if(e.key==='Escape'){close();if(!useIngest.getState().busy)$('#captureModal').classList.remove('open')}})
 $('#globalSearch').addEventListener('input',e=>{e.stopImmediatePropagation();search()},true);$('#globalSearch').addEventListener('focus',e=>{e.stopImmediatePropagation();search()},true)
 document.addEventListener('submit',e=>e.preventDefault())
-useIngest.subscribe(x=>{if(x.busy)$('#analysisPreview').textContent=x.progress;else if(x.error)$('#analysisPreview').textContent=x.error})
+useIngest.subscribe((x,previous)=>{if(x.busy)$('#analysisPreview').textContent=x.progress;else if(x.error)$('#analysisPreview').textContent=x.error;if(previous.busy&&!x.busy)render()})
 const fileInput=document.querySelector<HTMLInputElement>('.drop-zone input')!
 const showFiles=()=>{$('.drop-zone span').textContent=[...(fileInput.files??[])].map(x=>x.name).join('；')||'原件先保存在本机；解析失败可重试。'}
 fileInput.addEventListener('change',showFiles)
