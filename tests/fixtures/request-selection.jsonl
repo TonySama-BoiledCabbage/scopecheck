@@ -1,0 +1,12 @@
+{"id": "explicit-en", "language": "en", "text": "Please add a warm grey colour option.", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "Explicit design request."}
+{"id": "question-en", "language": "en", "text": "Could you include a wireless charging pad?", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "Proposed scope, not approval."}
+{"id": "hold-en", "language": "en", "text": "Please do not start CAD work until we confirm the cost.", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "Hold request; never convert into start-work authorisation."}
+{"id": "unapproved-date-en", "language": "en", "text": "Sales wants delivery one week earlier. This has not been approved.", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "Request candidate; formal date remains unchanged."}
+{"id": "praise-en", "language": "en", "text": "The shape looks great. Thanks for the update.", "expectedActionable": false, "labelStatus": "provisional-human-synthetic", "notes": "Praise alone."}
+{"id": "header-en", "language": "en", "text": "Client: Example Studio", "expectedActionable": false, "labelStatus": "provisional-human-synthetic", "notes": "Header only."}
+{"id": "indirect-en", "language": "en", "text": "A larger power button would make this easier to use.", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "Indirect request likely missed by current wording guard."}
+{"id": "contract-en", "language": "en", "text": "The signed agreement includes two renders and one review round.", "expectedActionable": false, "labelStatus": "provisional-human-synthetic", "notes": "Background contract summary."}
+{"id": "explicit-zh", "language": "zh", "text": "请增加一个暖灰色版本。", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "明确设计请求。"}
+{"id": "hold-zh", "language": "zh", "text": "请不要开始无线充电底座的 CAD，等我们确认费用。", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "暂停请求，不是开工批准。"}
+{"id": "praise-zh", "language": "zh", "text": "整体方向很好，谢谢更新。", "expectedActionable": false, "labelStatus": "provisional-human-synthetic", "notes": "仅表扬。"}
+{"id": "indirect-zh", "language": "zh", "text": "电源键再大一点就好用了。", "expectedActionable": true, "labelStatus": "provisional-human-synthetic", "notes": "隐含请求；当前关键词可能漏判。"}

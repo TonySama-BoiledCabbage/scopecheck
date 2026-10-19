@@ -66,3 +66,13 @@ With the dev server running, `/tests/interactions.html` runs a small interface r
 ## License
 
 Project code is available under the [MIT License](LICENSE). Third-party dependencies and model weights retain their own licenses. Qwen model licensing evidence is retained in [verification/QWEN_MODEL_LICENSE.txt](verification/QWEN_MODEL_LICENSE.txt).
+
+## Submission snapshot and continued development
+
+The current algorithm is experimental; there is no measured representative accuracy claim. See [MAINTENANCE.md](MAINTENANCE.md) for the current selector, known failure modes, provisional evaluation examples and contribution workflow. The `hackathon-week2-candidate-v1` tag is a frozen candidate, not proof of a published submission. Runtime source baseline: `6f3d3f5b96dd10820e54de5ac68dcf3126341893`.
+
+Week 2 cutoff is October 19, 2026 at 06:59 UTC (02:59 in Toronto). Keep later maintenance separate from the recorded entry; note every post-deadline commit below as required by the challenge FAQ. Do not move the candidate tag to incorporate later work.
+
+| Post-deadline commit | Date (UTC) | Change | Included in submitted demo? |
+| --- | --- | --- | --- |
+| None recorded when this section was prepared | — | Add a row for each future post-deadline commit | — |
