@@ -1,3 +1,9 @@
+## Local AI update
+
+`POST /api/local-ai/extract` retains its existing request/response schema, localhost/origin/call-header checks, 4000-character per-request limit and evidence/numeric validation. `language` controls model instruction language; original excerpts retain their original language. A new response header `X-Frame-AI-Mode: local-model-selection-with-wording-guard-and-verbatim-excerpts` identifies the constrained mode. Internally, local Ollama `/api/chat` returns an actionable boolean per source unit; the adapter copies source excerpts into candidate fields and passes them through Frame validation. This is not a project CRUD service or automatic approval API.
+
+The browser batches long originals, remaps evidence indices and persists only after every batch validates. See the current-flow section in `LOCAL_AI_GUIDE.md` for limits and verification.
+
 # 接口与能力映射
 
 语言扩展：`/api/local-ai/extract` 可选传入 `language: "en" | "zh"`，省略时沿用中文；响应头 `X-Frame-AI-Language` 表示本次请求语言。`extractWithOllama(sourceId,model,language?)` 和 `captureText(text,language?)` 支持同一参数。英文界面请求英文候选，quote仍须逐字对应原文；原有schema、证据校验与审核门槛保持。

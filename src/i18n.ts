@@ -4,6 +4,10 @@ export type Language='en'|'zh'
 let language:Language='en'
 export const getLanguage=()=>language
 const additions:[string,string][]=[
+  ['原文片段（只读）','Original Segment (Read Only)'],['人工核对','Review Manually'],
+  ['Ollama AI 筛选 · 原文摘录（含句式校验）','Ollama AI Selection · Source Excerpt + Wording Check'],['AI 筛选后摘录原文，含请求用语校验；候选仍需人工核对。','AI selects requests with a wording check; candidate content is quoted from the original and still needs human review.'],
+  ['全部','All'],
+  ['保存并用本地 AI 整理','Save & Organise with Local AI'],['原文片段（规则，非 AI）','Original Segments (Rules, not AI)'],['用本地 AI 整理最新原件','Organise Latest Original with Local AI'],['本地 AI 候选','Local AI Suggestions'],['整理方式','Processing method'],['本地 AI 不可用，请重新检测；不会自动改用规则整理。','Local AI unavailable. Check the connection again; processing will not fall back to rules.'],['本地 AI 未找到可提取的需求；原件保留。','Local AI found no actionable requests. The original is retained.'],['单个原文片段超过4000字，请分段后重试；原件保留。','A single source segment exceeds 4000 characters. Split it and retry; the original is retained.'],
   ['清空演示样例（可恢复）','Clear Demo Samples (Recoverable)'],['清空演示样例','Clear Demo Samples'],['清空上述样例（可恢复）','Clear Listed Samples (Recoverable)'],['恢复上次样例备份','Restore Previous Samples'],['以下项目将从展示中清空，替换为一个空白项目。本机保留恢复备份和原件；不会删除模型。','The listed projects will be replaced with one empty project. A local recovery backup and originals will be retained. Installed models are kept.'],['样例已清空，空白项目已保存；可在本地 AI 中恢复备份。','Samples cleared and an empty project saved. Restore the backup from Local AI.'],['样例备份已恢复。','Sample backup restored.'],
   ['日视图','Day'],['周视图','Week'],['月视图','Month'],['上一个周期','Previous period'],['下一个周期','Next period'],['当天暂无已排期工作项','No scheduled work items on this day'],
   ['打开项目资料，选择原件后点击 Ollama 整理。','Open project materials, select an original, then choose Organise with Ollama.'],['本地模型不可用','Local model unavailable'],['本地模型：','Local models:'],['本地 AI','Local AI'],
@@ -86,7 +90,7 @@ export function initI18n(){
   document.querySelector('.top-actions')!.prepend(toggle)
   const originals=new WeakMap<Node,{base:string;rendered:string}>()
   const attributes=new WeakMap<Element,Map<string,{base:string;rendered:string}>>()
-  const protectedContent='script,style,input,textarea,#sourceModel option,[contenteditable],[data-no-i18n="true"],blockquote,.project-row-main b,.project-row-main small,.project-card-copy h3,.project-card-copy p,.project-hero-detail h1,.project-hero-detail>div>p,.task-copy b,.kanban article b,.roadbar,[data-task-id] b,.review-card b,.change-item b,.change-table-row>span:first-child b,.reference-card b,.project-legend,.capture-target button'
+  const protectedContent='script,style,input,textarea,#sourceModel option,#captureModel option,[contenteditable],[data-no-i18n="true"],blockquote,.project-row-main b,.project-row-main small,.project-card-copy h3,.project-card-copy p,.project-hero-detail h1,.project-hero-detail>div>p,.task-copy b,.kanban article b,.roadbar,[data-task-id] b,.review-card b,.change-item b,.change-table-row>span:first-child b,.reference-card b,.project-legend,.capture-target button'
   const observer=new MutationObserver(apply)
   function apply(){
     observer.disconnect()

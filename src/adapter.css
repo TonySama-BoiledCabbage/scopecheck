@@ -5,6 +5,14 @@
 #frameForm input, #frameForm select, #frameForm textarea { max-width: 100%; padding: 8px; font: inherit; }
 #frameForm input[type=checkbox] { justify-self: start; }
 #formError { color: #a33323; }
+.capture-options { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin: 14px 0; }
+.capture-options label { display: grid; gap: 6px; font-size: 12px; }
+.capture-options select, #reviewTools select { max-width: 100%; padding: 8px; font: inherit; }
+.capture-options p { width: 100%; margin: 0; font-size: 12px; color: var(--muted); }
+#reviewTools { flex-wrap: wrap; gap: 12px; }
+#reviewProgress { width: 100%; margin: 0; font-size: 12px; color: var(--marine); }
+#reviewProgress:empty { display: none; }
+#analyzeButton:disabled, .drawer-actions button:disabled { opacity: .5; cursor: not-allowed; }
 .language-switch { min-width: 76px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: white; color: var(--ink); font: inherit; cursor: pointer; }
 .language-switch:focus-visible { outline: 3px solid var(--marine); outline-offset: 2px; }
 .task-item { grid-template-columns: 20px 8px minmax(0, 1fr); }

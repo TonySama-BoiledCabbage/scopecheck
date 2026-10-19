@@ -1,3 +1,7 @@
+## 本地 AI 使用方式（当前版本）
+
+点击 **Capture Context → Processing method: Ollama Local AI → qwen2.5:1.5b → Save & Organise with Local AI**。已有原件可在 **Review → Organise Latest Original with Local AI** 重新筛选。AI 候选、人工整理、原文片段分别查看；失败不会自动改用规则整理。当前版本采用明确标识的“模型筛选＋句式校验＋原文摘录”，仍需人审。完整说明与真实限制见 `LOCAL_AI_GUIDE.md` 首节。
+
 # ScopeCheck V2 → Frame 本地适配
 
 已恢复右上角中英文切换，首次默认英文并记住选择。任务竖排与日历日期换行已修复，详见 `BILINGUAL_FIX.md`。已有中文项目和原文不会被自动改写。英文演示可使用新建的 `ScopeCheck English Demo` 项目。

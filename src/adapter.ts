@@ -17,6 +17,7 @@ const userText=(v:unknown)=>`<span data-no-i18n="true">${esc(v)}</span>`
 const state=frame.read
 let toastTimer:ReturnType<typeof setTimeout>, models:string[]=[]
 let calendarDate=today(),calendarMode:CalendarMode='week'
+let captureEngine:'ollama'|'rules'='ollama',reviewEngine='ollama'
 let aiStatus='Ollama：检测中…'
 function notice(message:string){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),5000)}
 function close(){ $('#detailDrawer').classList.remove('open');$('#detailDrawer').setAttribute('aria-hidden','true') }
@@ -70,15 +71,15 @@ function changeEditor(id:string){
 function deliveryEditor(){const session=projectSession(),s=session.read();drawer('BASELINE · FRAME',`<h2>提议正式交付日期</h2><form id="frameForm" class="center-form">${field('交付日期','date',s.baselines.at(-1)!.deliveryDate,'date')}</form>${errorSlot}<div class="drawer-actions"><button id="proposeDelivery">记录提议</button></div>`);on('proposeDelivery',async()=>{await frame.proposeDelivery(String(formData().get('date'))||null,s.dataRevision,session);render();changeEditor(latestChanges(session.read())[0].id);notice('提议已记录，尚未批准改期')})}
 async function sourceEditor(id:string){
   const session=projectSession(),s=session.read().sources.find(x=>x.id===id)!
-  drawer('SOURCE · FRAME',`<h2 data-no-i18n="true">${esc(s.name)}</h2><p>${esc(s.status)} · ${esc(s.parser)}<br>${esc(s.error)}<br>${s.warnings.map(esc).join('<br>')}</p><p>${esc(aiStatus)}</p>${errorSlot}<div class="drawer-actions"><button id="downloadOriginal">下载原件</button><button id="retrySource">重新解析（规则整理）</button><select id="sourceModel" aria-label="本地模型" ${models.length?'':'disabled'}>${models.length?models.map(m=>`<option>${esc(m)}</option>`).join(''):`<option>${getLanguage()==='en'?'Local model unavailable':'本地模型不可用'}</option>`}</select><button id="aiExtract" ${models.length?'':'disabled'}>Ollama 整理</button><button id="sourceRecheck">重新检测 →</button></div>`)
+  drawer('SOURCE · FRAME',`<h2 data-no-i18n="true">${esc(s.name)}</h2><p>${esc(s.status)} · ${esc(s.parser)}<br>${esc(s.error)}<br>${s.warnings.map(esc).join('<br>')}</p><p>${esc(aiStatus)}</p><p id="sourceAiProgress" role="status"></p>${errorSlot}<div class="drawer-actions"><button id="downloadOriginal">下载原件</button><button id="retrySource">重新解析（规则整理）</button><select id="sourceModel" aria-label="本地模型" ${models.length?'':'disabled'}>${models.length?models.map(m=>`<option>${esc(m)}</option>`).join(''):`<option>${getLanguage()==='en'?'Local model unavailable':'本地模型不可用'}</option>`}</select><button id="aiExtract" ${models.length?'':'disabled'}>Ollama 整理</button><button id="sourceRecheck">重新检测 →</button></div>`)
   on('downloadOriginal',async()=>{session.read();const file=await getOriginal(s.hash),url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=s.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)})
   on('retrySource',async()=>{session.read();await retrySource(id);if(useIngest.getState().error)throw Error(useIngest.getState().error);render();await sourceEditor(id);notice('解析结果已保存（规则整理）')})
   on('sourceRecheck',async()=>{await detectAi();await sourceEditor(id)})
-  if(models.length)on('aiExtract',async()=>{session.read();await extractWithOllama(id,(document.getElementById('sourceModel') as HTMLSelectElement).value,getLanguage());render();await sourceEditor(id);notice('Ollama 候选已保存，等待人工审核')})
+  if(models.length)on('aiExtract',async()=>{session.read();const count=await extractWithOllama(id,(document.getElementById('sourceModel') as HTMLSelectElement).value,getLanguage());reviewEngine='ollama';render();close();nav('reviews');notice(count?'Ollama 候选已保存，等待人工审核':'本地 AI 未找到可提取的需求；原件保留。')})
 }
 
 function render(){
-  const s=state(),entries=listProjects(),b=s.baselines.at(-1)!,reviews=s.blocks.filter(x=>x.review.status!=='dismissed'),changes=latestChanges(s)
+  const s=state(),entries=listProjects(),b=s.baselines.at(-1)!,reviews=s.blocks.filter(x=>x.review.status!=='dismissed'&&(reviewEngine==='all'||x.engine===reviewEngine)),changes=latestChanges(s)
   const projectButton=(key:string,name:string,i:number,description:string)=>`<button class="project-row" data-project-key="${esc(key)}"><span class="project-index ${['blue-bg','yellow-bg','purple-bg'][i%3]}">${i+1}</span><span class="project-row-main"><b>${esc(name)}</b><small>${esc(description)}</small></span><span>→</span></button>`
   $('.projects-list').innerHTML=entries.map((p,i)=>projectButton(p.key,p.state?.project.name??'项目读取失败',i,p.error||(p.state!.project.demo?'Frame 演示数据 · 本机独立存储':p.state!.project.client))).join('')
   $('.project-grid').innerHTML=entries.filter(p=>p.state).slice(0,3).map((p,i)=>`<button class="project-card ${['homesday','northline','orbit'][i]}" data-project-key="${esc(p.key)}"><div class="project-card-top"><span class="project-type">${esc(p.state!.project.demo?'FRAME DEMO':'LOCAL PROJECT')}</span></div><div class="project-card-copy"><h3>${esc(p.state!.project.name)}</h3><p>${esc(p.state!.project.client)}</p><div class="card-meta"><span>${p.state!.items.length} 个工作项</span></div></div></button>`).join('')
@@ -120,8 +121,12 @@ function render(){
   }else extra.innerHTML=''
   const dates=s.items.flatMap(i=>[i.start,i.end]).filter((x):x is string=>!!x).sort(),first=dates[0]??current,last=dates.at(-1)??current,span=Math.max(1,dayDiff(first,last)+1),tickCount=Math.min(5,span)
   $('.roadmap').innerHTML=`<div class="roadmap-content"><div class="roadmap-dates">${Array.from({length:tickCount},(_,n)=>{const offset=Math.round((span-1)*n/Math.max(1,tickCount-1));return `<span style="left:${(offset+.5)/span*100}%">${addDays(first,offset)}</span>`}).join('')}</div>`+s.items.map(i=>{const band=dateBand(i,first,span);return `<div class="roadmap-row"><b>${esc(phases.find(x=>x[0]===i.phase)?.[1])}</b><div class="roadmap-task"><button class="roadmap-label" data-task-id="${esc(i.id)}">${userText(i.title)}<small>${esc(i.start??'未排期')} — ${esc(i.end??'未定结束日期')}</small></button><div class="roadmap-track">${band?`<button class="roadbar rb1" aria-label="${esc(i.title)} · ${esc(i.start??i.end)} — ${esc(i.end??i.start)}" data-task-id="${esc(i.id)}" style="left:${band.offset/span*100}%;width:${band.length/span*100}%"></button>`:''}</div></div></div>`}).join('')+(s.items.length?'':'<p class="frame-empty">当前项目尚无任务</p>')+'</div>'
-  const reviewRows=reviews.map(x=>`<button class="review-card" data-block-id="${esc(x.id)}"><span class="status-orb pending"></span><span><small>${esc(x.engine==='rules'?'规则整理（非 AI）':x.engine==='ollama'?'Ollama 本地 AI':'人工整理')}</small><b>${userText(x.title)}</b><p>${esc(x.review.status)}${x.commit?' · 已落实':''}</p></span><em>查看</em></button>`).join('')||'<p>暂无待审核需求。</p>'
-  $('.review-list-panel').innerHTML=reviewRows;$('#reviewDetail').innerHTML='<h2>需求审核</h2><p>点击候选查看原文；确认内容不会批准改期。</p>'
+  if(!document.getElementById('reviewTools'))$('#reviewsView .page-heading').insertAdjacentHTML('afterend','<div id="reviewTools" class="toolbar"></div>')
+  const sourceFragments=[...new Map(s.blocks.map(block=>[block.sourceId+JSON.stringify(block.evidence),block])).values()]
+  const latestSource=s.sources.at(-1)
+  $('#reviewTools').innerHTML=`<p id="reviewProgress" role="status">${esc(useIngest.getState().busy?useIngest.getState().progress:useIngest.getState().error)}</p><label>查看 <select id="reviewEngine">${[['ollama','本地 AI 候选'],['manual','人工整理'],['rules','原文片段（规则，非 AI）'],['all','全部']].map(([value,label])=>`<option value="${value}" ${value===reviewEngine?'selected':''}>${label} (${value==='rules'?sourceFragments.length:s.blocks.filter(x=>x.review.status!=='dismissed'&&(value==='all'||x.engine===value)).length})</option>`).join('')}</select></label>${latestSource?`<button class="primary-button" data-ai-source="${esc(latestSource.id)}">用本地 AI 整理最新原件</button>`:''}`
+  const reviewRows=reviewEngine==='rules'?(sourceFragments.map(x=>`<article class="review-card"><span class="status-orb"></span><span><small>原文片段（只读）</small><b>${userText(x.evidence.text.slice(0,72))}</b><p>${userText(x.evidence.text)}</p></span><button class="text-button" data-block-id="${esc(x.id)}">人工核对</button></article>`).join('')||'<p>尚未上传原件。</p>'):reviews.map(x=>`<button class="review-card" data-block-id="${esc(x.id)}"><span class="status-orb pending"></span><span><small>${esc(x.engine==='rules'?'原文片段（规则，非 AI）':x.engine==='ollama'?'Ollama AI 筛选 · 原文摘录（含句式校验）':'人工整理')}</small><b>${userText(x.title)}</b><p>${esc(x.review.status)}${x.commit?' · 已落实':''}</p></span><em>查看</em></button>`).join('')||'<p>暂无待审核需求。</p>'
+  $('.review-list-panel').innerHTML=reviewRows;$('#reviewDetail').innerHTML='<h2>需求审核</h2><p>AI 筛选后摘录原文，含请求用语校验；候选仍需人工核对。</p><p>点击候选查看原文；确认内容不会批准改期。</p>'
   document.querySelectorAll('.nav-dot,.changes-panel .count-badge').forEach(x=>x.textContent=String(reviews.filter(x=>x.review.status==='unreviewed').length))
   $('.changes-panel').querySelectorAll('.change-item').forEach(x=>x.remove());$('.changes-panel .panel-link').insertAdjacentHTML('beforebegin',reviews.slice(0,3).map(x=>`<button class="change-item" data-block-id="${esc(x.id)}"><span class="status-orb pending"></span><span><b>${userText(x.title)}</b><small>${esc(x.review.status)}</small></span><em>查看</em></button>`).join(''))
   const table=$('.change-table-panel');table.querySelectorAll('.change-table-row,.frame-empty').forEach(x=>x.remove());table.insertAdjacentHTML('beforeend',changes.map(c=>`<button class="change-table-row" data-change-id="${esc(c.id)}"><span><b>${esc(c.proposed.kind==='item'?c.proposed.item.title:c.proposed.kind==='delivery'?'正式交付日期':'额度规则')}</b></span><span>${esc(c.changedBy)}</span><span>${esc(c.outcome)}</span><em>${esc(c.status)}</em></button>`).join('')||'<p class="frame-empty">暂无变更记录。</p>')
@@ -130,8 +135,11 @@ function render(){
   $('.reference-grid').innerHTML=s.sources.map(x=>`<article class="reference-card"><div><span class="ref-tag">本机原件 · ${esc(x.status)}</span><b>${esc(x.name)}</b><small>${esc(x.parser||'待解析')} ${esc(x.error)}</small><button class="text-button" data-source="${esc(x.id)}">查看 / 重试 →</button></div></article>`).join('')||'<p>尚未上传原件。</p>'
   $('.capture-target button').textContent=s.project.name+'⌄';$('.capture-target button').dataset.chooseProject='true'
   $('#reviewsView .eyebrow').textContent='REQUIREMENT REVIEW';$('#reviewsView .page-heading p').textContent='规则整理与本地 AI 的候选分别标识；确认内容不会批准改期。'
-  $('#captureTitle').textContent='保存原件并整理候选';$('#analyzeButton').textContent='保存原件并解析（规则整理）';$('.drop-zone span').textContent='原件先保存在本机；解析失败可重试，不会批准需求。'
+  $('#captureTitle').textContent='保存原件并整理候选';$('#analyzeButton').textContent=captureEngine==='ollama'?'保存并用本地 AI 整理':'保存原件并解析（规则整理）';($('#analyzeButton') as HTMLButtonElement).disabled=captureEngine==='ollama'&&!models.length;$('.drop-zone span').textContent='原件先保存在本机；解析失败可重试，不会批准需求。'
   $('.notification-button').hidden=true;$('.project-legend').innerHTML=`<span>${esc(s.project.name)}</span>`;document.querySelectorAll('.segmented:not(#calendarSegments),.toolbar-right,.toolbar > .filter-button,.panel-actions .filter-button,.focus-chip .pulse').forEach(x=>(x as HTMLElement).hidden=true)
+  if(!document.getElementById('captureOptions'))$('.capture-tabs').insertAdjacentHTML('afterend','<div id="captureOptions" class="capture-options"></div>')
+  const chosenModel=(document.getElementById('captureModel') as HTMLSelectElement|null)?.value
+  $('#captureOptions').innerHTML=`<label>整理方式<select id="captureEngine"><option value="ollama" ${captureEngine==='ollama'?'selected':''}>Ollama 本地 AI</option><option value="rules" ${captureEngine==='rules'?'selected':''}>原文片段（规则，非 AI）</option></select></label><label>本地模型<select id="captureModel" ${models.length?'':'disabled'}>${models.length?models.map(m=>`<option value="${esc(m)}" ${m===chosenModel?'selected':''}>${esc(m)}</option>`).join(''):`<option>${getLanguage()==='en'?'Local model unavailable':'本地模型不可用'}</option>`}</select></label><p>${esc(aiStatus)}</p><p>AI 筛选后摘录原文，含请求用语校验；候选仍需人工核对。</p><button class="text-button" id="captureRecheck">重新检测 →</button>`
   $('#profileView .page-heading h1').textContent='本机工作空间';$('#profileView .page-heading p').textContent=aiStatus;$('#profileView .profile-grid').innerHTML=`<article class="panel settings-card"><h2>本地服务</h2><p data-no-i18n="true">Ollama · http://127.0.0.1:11434</p><p>本地模型： <span data-no-i18n="true">${models.length?models.map(esc).join(' · '):'—'}</span></p><button id="detectAi"><span>${esc(aiStatus)}</span><b>重新检测 →</b></button><button id="exportData"><span>导出当前项目元数据</span><b>JSON →</b></button><button id="clearDemoSamples"><span>清空演示样例（可恢复）</span><b>→</b></button>${localStorage.getItem(DEMO_RECOVERY)?'<button id="restoreDemoSamples">恢复上次样例备份</button>':''}<p>打开项目资料，选择原件后点击 Ollama 整理。</p><p>原件请在项目资料中单独下载。聊天、邮箱、账户与计时服务尚未接入。</p></article>`
 }
 
@@ -164,13 +172,26 @@ document.addEventListener('click',event=>{
   else if('openCapture' in d)fn=()=>{if(el.matches('#projectsView .page-heading [data-open-capture]'))projectEditor(true);else{$('#captureModal').classList.add('open');$('#captureModal').setAttribute('aria-hidden','false')}}
   else if('closeModal' in d)fn=()=>{if(useIngest.getState().busy)throw Error('正在保存原件，请等待处理结束。');$('#captureModal').classList.remove('open');$('#captureModal').setAttribute('aria-hidden','true')}
   else if('captureTab' in d)fn=()=>{document.querySelectorAll<HTMLElement>('[data-capture-content]').forEach(x=>x.classList.toggle('active',x.dataset.captureContent===d.captureTab));document.querySelectorAll('[data-capture-tab]').forEach(x=>x.classList.toggle('active',x===el))}
-  else if(el.id==='analyzeButton')fn=async()=>{const fileTab=$('[data-capture-content="file"]').classList.contains('active');if(fileTab){const files=(document.querySelector('.drop-zone input') as HTMLInputElement).files;if(!files?.length)throw Error('请先选择文件。');await importFiles([...files]);if(useIngest.getState().error)throw Error(useIngest.getState().error)}else await captureText(($('#captureText') as HTMLTextAreaElement).value,getLanguage());render();$('#analysisPreview').textContent='原件与规则整理候选已保存；请在待确认页面审核。';notice('原件与解析结果已保存（规则整理）')}
+  else if(el.id==='analyzeButton')fn=async()=>{
+    const mode=captureEngine,model=(document.getElementById('captureModel') as HTMLSelectElement).value
+    if(mode==='ollama'&&(!models.length||!models.includes(model)))throw Error('本地 AI 不可用，请重新检测；不会自动改用规则整理。')
+    const fileTab=$('[data-capture-content="file"]').classList.contains('active')
+    let ids:string[]=[]
+    if(fileTab){const files=(document.querySelector('.drop-zone input') as HTMLInputElement).files;if(!files?.length)throw Error('请先选择文件。');ids=await importFiles([...files])??[];if(useIngest.getState().error)throw Error(useIngest.getState().error)}
+    else ids=[await captureText(($('#captureText') as HTMLTextAreaElement).value,getLanguage())]
+    let count=0
+    if(mode==='ollama')for(const id of new Set(ids))count+=await extractWithOllama(id,model,getLanguage())
+    reviewEngine=mode;render();$('#captureModal').classList.remove('open');$('#captureModal').setAttribute('aria-hidden','true');nav('reviews')
+    notice(mode==='rules'?'原件与解析结果已保存（规则整理）':count?'Ollama 候选已保存，等待人工审核':'本地 AI 未找到可提取的需求；原件保留。')
+  }
+  else if(d.aiSource)fn=async()=>{if(!models.length)throw Error('本地 AI 不可用，请重新检测；不会自动改用规则整理。');const count=await extractWithOllama(d.aiSource!,models[0],getLanguage());reviewEngine='ollama';render();notice(count?'Ollama 候选已保存，等待人工审核':'本地 AI 未找到可提取的需求；原件保留。')}
+
   else if(el.matches('.board-panel .primary-button,#calendarView .page-heading .primary-button'))fn=()=>taskEditor()
   else if(el.matches('.project-summary .icon-button'))fn=()=>projectEditor()
   else if(el.id==='clearDemoSamples')fn=clearSamplesEditor
   else if(el.id==='restoreDemoSamples')fn=async()=>{await restoreDemoSamples();selectProject('frame-project-v1');render();notice('样例备份已恢复。')}
   else if(el.id==='localAiButton')fn=async()=>{nav('profile');await detectAi()}
-  else if(el.id==='detectAi')fn=detectAi
+  else if(el.id==='detectAi'||el.id==='captureRecheck')fn=detectAi
   else if(el.id==='exportData')fn=()=>exportProject()
   else if(d.calendarMode)fn=()=>{if(['day','week','month'].includes(d.calendarMode!)){calendarMode=d.calendarMode as CalendarMode;render()}}
   else if(d.calendarStep)fn=()=>{calendarDate=stepCalendarDate(calendarDate,calendarMode,Number(d.calendarStep));render()}
@@ -179,11 +200,11 @@ document.addEventListener('click',event=>{
   else if(el.matches('.filter-button')&&!el.closest('#drawerBody'))fn=()=>notice('此筛选尚未接入')
   if(fn){event.preventDefault();event.stopImmediatePropagation();void action(fn)}
 },true)
-document.addEventListener('change',event=>{const input=event.target as HTMLInputElement;if(input.id==='calendarDate'){if(input.value){calendarDate=input.value;render()}return;}if(!input.dataset.taskToggle)return;event.stopImmediatePropagation();const original=state().items.find(x=>x.id===input.dataset.taskToggle)!;void action(async()=>{try{const next=await frame.saveTask({...original,status:input.checked?'done':'planned'},original);notice(next.items.find(x=>x.id===original.id)?.status===(input.checked?'done':'planned')?'任务状态已保存':'已记录变更提议；任务状态未变')}finally{render()}})},true)
+document.addEventListener('change',event=>{const input=event.target as HTMLInputElement;if(input.id==='captureEngine'){captureEngine=input.value==='rules'?'rules':'ollama';render();return;}if(input.id==='reviewEngine'){reviewEngine=input.value;render();return;}if(input.id==='calendarDate'){if(input.value){calendarDate=input.value;render()}return;}if(!input.dataset.taskToggle)return;event.stopImmediatePropagation();const original=state().items.find(x=>x.id===input.dataset.taskToggle)!;void action(async()=>{try{const next=await frame.saveTask({...original,status:input.checked?'done':'planned'},original);notice(next.items.find(x=>x.id===original.id)?.status===(input.checked?'done':'planned')?'任务状态已保存':'已记录变更提议；任务状态未变')}finally{render()}})},true)
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target as HTMLElement).dataset.taskId){e.preventDefault();taskEditor((e.target as HTMLElement).dataset.taskId)}if(e.key==='Escape'){close();if(!useIngest.getState().busy)$('#captureModal').classList.remove('open')}})
 $('#globalSearch').addEventListener('input',e=>{e.stopImmediatePropagation();search()},true);$('#globalSearch').addEventListener('focus',e=>{e.stopImmediatePropagation();search()},true)
 document.addEventListener('submit',e=>e.preventDefault())
-useIngest.subscribe((x,previous)=>{if(x.busy)$('#analysisPreview').textContent=x.progress;else if(x.error)$('#analysisPreview').textContent=x.error;if(previous.busy&&!x.busy)render()})
+useIngest.subscribe((x,previous)=>{if(x.busy)$('#analysisPreview').textContent=x.progress;else if(x.error)$('#analysisPreview').textContent=x.error;const progress=document.getElementById('sourceAiProgress');if(progress)progress.textContent=x.busy?x.progress:x.error;const reviewProgress=document.getElementById('reviewProgress');if(reviewProgress)reviewProgress.textContent=x.busy?x.progress:x.error;if(previous.busy&&!x.busy)render()})
 const fileInput=document.querySelector<HTMLInputElement>('.drop-zone input')!
 const showFiles=()=>{$('.drop-zone span').textContent=[...(fileInput.files??[])].map(x=>x.name).join('；')||'原件先保存在本机；解析失败可重试。'}
 fileInput.addEventListener('change',showFiles)

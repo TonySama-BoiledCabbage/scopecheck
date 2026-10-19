@@ -1,3 +1,17 @@
+## Current local AI flow (supersedes earlier generation notes)
+
+Capture Context now defaults to **Ollama Local AI**, with an explicit model selector, connection status, Check Again button and **Save & Organise with Local AI** action. Rules remain a separate explicit choice, labelled **Original Segments (Rules, not AI)**. If no local model is available, the AI action is disabled; failed AI requests never silently become rule results.
+
+For an already saved original, open Review and use **Organise Latest Original with Local AI**. Candidate filters separate local AI selections, manual work, all original segments and all active review records. Original-segment view includes evidence retained in earlier/replaced AI drafts, so a model rejection cannot make source text disappear.
+
+Qwen 1.5B is used for per-message request classification through Ollama's chat API with actual system/user/assistant roles. A clearly labelled request-wording guard runs before classification. Titles are excerpts from a request-bearing sentence; descriptions and quotes are copied verbatim from the same original segment. The UI explicitly labels this hybrid as **Ollama AI Selection · Source Excerpt + Wording Check**. It does not present model-written interpretations as source facts or translate original-language evidence.
+
+Long sources are processed in sequential batches (up to 6 original units, approximately 1800 characters per batch; a single unit may use the existing 4000-character API limit). Original units and global evidence indices are preserved. All batches must pass the original Frame validation before candidates are persisted. The overall domain result still permits at most 40 suggestions per extraction. Progress shows the real batch number. Reprocessing dismisses only untouched, unreviewed AI drafts through existing domain review events; manual edits, reviewed/committed work and user placements are preserved.
+
+Real browser result for the user's current ARC conversation: 6 batches completed; 20 local AI selections saved; 2 manual records retained; 34 unique original segments remain readable; formal work items remain 0 and delivery remains unagreed. Candidate count is not an accuracy score. The small model still misses some nuances (including one requested presentation date change in this run), and the conservative wording guard may miss indirect requests. Review the original-segment view for omissions. No model was downloaded or changed.
+
+Verification: 37 Node tests, typecheck and build pass. UI evidence: `verification/ai-repair-ui.json`, `verification/ai-repaired-review.png`, `verification/ai-capture-choice.png`. A further command-line HTTP/model regression run was not executed because automatic approval review hit its usage limit; it is not reported as passed. The earlier tool outputs and documents describe earlier protocol versions and should be read historically. Reproducible mixed-case check: `node scripts/verify-ai-mixed.mjs` (requires the local service and model).
+
 ## 页面入口
 
 右上角的 **本地 AI / Local AI** 是常驻入口，点击打开本地服务面板并重新读取连接状态。面板展示 Ollama 地址、实际已安装模型和重新检测按钮。当前实测模型为 `qwen2.5:1.5b`。

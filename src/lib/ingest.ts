@@ -1,9 +1,11 @@
 import { create } from 'zustand'
 import { useProject,projectSession } from '../store/project'
 import { uid } from '../domain/engine'
-import { registerSource, sourceStatus, finishExtraction,saveAiSuggestions,validateAiSuggestions } from '../domain/capture'
+import { registerSource, sourceStatus, finishExtraction,saveAiSuggestions,validateAiSuggestions,reviewBlock } from '../domain/capture'
 import { ExtractionSchema } from '../domain/capture-model'
 import { getOriginal, saveOriginal, sha256 } from './media-db'
+import {aiBatches} from './ai-batches.ts'
+import type {AiSuggestions} from '../domain/capture-model.ts'
 
 type IngestState={busy:boolean;progress:string;error:string;freshIds:string[];setError:(error:string)=>void;stop:()=>void}
 let cancellation:AbortController|null=null
@@ -94,13 +96,29 @@ export async function extractWithOllama(sourceId:string,model:string,language:'e
   useIngest.setState({busy:true,error:'',progress:'本地AI正在整理需求；原件已保存…',freshIds:[]})
   cancellation=new AbortController()
   try{
-    const response=await fetch('/api/local-ai/extract',{method:'POST',headers:{'X-Frame-Parser':'local-v1','Content-Type':'application/json'},body:JSON.stringify({model,units,language}),signal:cancellation.signal})
-    const raw=await response.json();if(!response.ok)throw Error(raw.error||'本地AI提取失败。')
-    const result=validateAiSuggestions(raw,units)
+    const batches=aiBatches(units),suggestions:AiSuggestions['suggestions']=[]
+    for(const [index,batch] of batches.entries()){
+      useIngest.setState({progress:`Ollama ${index+1}/${batches.length} · ${model}`})
+      const response=await fetch('/api/local-ai/extract',{method:'POST',headers:{'X-Frame-Parser':'local-v1','Content-Type':'application/json'},body:JSON.stringify({model,units:batch.units,language}),signal:cancellation.signal})
+      const raw=await response.json();if(!response.ok)throw Error(raw.error||'本地AI提取失败。')
+      const parsed=validateAiSuggestions(raw,batch.units)
+      suggestions.push(...parsed.suggestions.map(part=>({...part,evidenceIndex:part.evidenceIndex+batch.offset})))
+    }
+    // Commit only once after all batches validate; a failed batch cannot publish partial success.
+    const result=validateAiSuggestions({suggestions},units)
     const keys=await Promise.all(result.suggestions.map(part=>sha256(new TextEncoder().encode(JSON.stringify({part,evidence:units[part.evidenceIndex]})))))
     const before=new Map(session.read().blocks.map(b=>[b.id,b.engine]))
-    const next=await run(s=>saveAiSuggestions(s,sourceId,units,result,keys))
+    const next=await run(s=>{
+      let updated=saveAiSuggestions(s,sourceId,units,result,keys)
+      const currentKeys=new Set(keys.map(key=>'ollama:'+key))
+      // Refresh untouched AI drafts only; reviewed, committed or manually placed work survives.
+      for(const old of s.blocks.filter(b=>b.sourceId===sourceId&&b.engine==='ollama'&&b.review.status==='unreviewed'&&b.review.at===null&&!b.commit&&b.placement.origin==='system'&&!currentKeys.has(b.unitKey))){
+        updated=reviewBlock(updated,old.id,old.review.revision,'dismissed')
+      }
+      return updated
+    })
     useIngest.setState({freshIds:next.blocks.filter(b=>b.engine==='ollama'&&before.get(b.id)!=='ollama').map(b=>b.id),progress:result.suggestions.length?'本地AI候选已保存，等待人工审核；正式计划未变。':'未找到可提取的需求；可继续人工整理，原件保留。'})
+    return result.suggestions.length
   }catch(error){const message=cancellation.signal.aborted?'AI提取已取消，原件和已有建议保留。':error instanceof Error?error.message:'AI提取失败。';useIngest.setState({error:message});throw Error(message)}
   finally{useIngest.setState({busy:false});cancellation=null}
 }
