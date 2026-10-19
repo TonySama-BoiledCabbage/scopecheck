@@ -1,5 +1,12 @@
 # 验证结果
 
+## 本地 AI 自动日期提取
+
+不改现有 UI，Qwen 返回原文 dateQuote，由确定性日期解析与领域层二次校验生成可选 dateHint，填入系统建议位置和已有任务日期表单。无消息基准不换算相对日期，不用导入日补年份；无法验证的日期留空，不覆盖人工位置，不自动批准改期。
+
+41项测试、类型检查、构建通过。真实 qwen2.5:1.5b 接口四例全部通过：明确2026-10-21、消息2026-10-19起三天内为2026-10-22、会议2026-10-23、缺少消息日期时相对期限保持null。接口验证不写项目（verification/ai-dates-live.json）。localhost 隔离来源的真实原件解析→Qwen→自动日期→原表单→保存→刷新流程13项通过，无手工填写任务日期，会议小时保留原文，基线未变。证据 verification/ai-date-browser.txt/.png。不是代表性模型准确率评估。
+
+
 ## 复用原 Frame 的录入逻辑（不改 UI）
 
 对照原项目 `src/features/Capture.tsx` 的 EvidenceDialog.apply，恢复内部任务默认语义、placement 关联任务/日期、已有任务说明追加与来源引用、正式节点及既有范围风险保护。提取为适配层 `src/frame.ts` 的纯 draftFromBlock，仍通过 commitBlock、requiresReview 和原持久化写入。原有已提交提议不迁移、不自动批准。

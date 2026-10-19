@@ -43,6 +43,7 @@ export const AiSuggestionsSchema=z.object({suggestions:z.array(z.object({
   evidenceIndex:z.number().int().nonnegative(),quote:z.string().trim().min(1).max(10000),
   title:z.string().trim().min(1).max(160),description:z.string().trim().min(1).max(5000),
   uncertainties:z.array(z.string().trim().min(1).max(500)).max(10),
+  dateHint:z.object({quote:z.string().min(1).max(500),date:z.iso.date()}).strict().optional(),
 }).strict()).max(40)}).strict()
 export type AiSuggestions=z.infer<typeof AiSuggestionsSchema>
 export const BlockSchema = z.object({

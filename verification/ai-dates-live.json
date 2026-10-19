@@ -1,0 +1,43 @@
+{
+  "model": "qwen2.5:1.5b",
+  "projectWrites": false,
+  "results": [
+    {
+      "input": "Please send the updated image by October 21, 2026.",
+      "anchor": "2026-10-19 09:00 EDT",
+      "dateHint": {
+        "quote": "October 21, 2026",
+        "date": "2026-10-21"
+      },
+      "milliseconds": 484,
+      "status": "PASS"
+    },
+    {
+      "input": "Please send the revised cover within three days.",
+      "anchor": "2026-10-19 09:00 EDT",
+      "dateHint": {
+        "quote": "within three days",
+        "date": "2026-10-22"
+      },
+      "milliseconds": 180,
+      "status": "PASS"
+    },
+    {
+      "input": "Please schedule our next design review for October 23, 2026, from 10:00 to 10:30 AM EDT.",
+      "anchor": "2026-10-19 09:00 EDT",
+      "dateHint": {
+        "quote": "October 23, 2026, from 10:00 to 10:30 AM EDT",
+        "date": "2026-10-23"
+      },
+      "milliseconds": 383,
+      "status": "PASS"
+    },
+    {
+      "input": "Please send the revised cover within three days.",
+      "anchor": null,
+      "dateHint": null,
+      "milliseconds": 181,
+      "status": "PASS"
+    }
+  ]
+}

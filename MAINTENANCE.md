@@ -52,3 +52,7 @@ For each behaviour change, add one reproducing case, run the relevant existing t
 DD998855 is credited in README; GitHub write invitation was sent and may require acceptance. Do not attribute generated commits to another person. Pick one failure, reproduce it, fix the narrowest layer, record evaluation evidence, and open a PR. Keep original prototype provenance and MIT attribution. Suggested PR body: observed input, expected/actual result, changed layer, test/evaluation result, data/approval impact.
 
 Sources: [challenge FAQ and cutoff](https://dev.to/challenges/hacktoberfest-week2-2026-10-12), [entry requirements](https://dev.to/page/hacktoberfest-week2-2026-10-12-contest-rules).
+
+## Date-extraction follow-up
+
+On the fix branch, Qwen also locates an exact date phrase. `src/lib/date-hint.ts` resolves a conservative subset of dates against source-message metadata; `validateAiSuggestions` verifies the result again before `saveAiSuggestions` fills a system placement. Existing manual placements are retained. Date-only hints reuse the original materialisation form and never approve formal changes. The v1 tag predates this feature and is unchanged. Evaluate temporal extraction separately from request recall; ambiguous or unsupported date syntax is intentionally left for manual review. Live model checks: `scripts/verify-ai-dates.mjs`; end-to-end browser mode: `/tests/review-timeline.html?ai-dates`. Current support does not include hourly scheduling, arbitrary date ranges or business-day calendars.
