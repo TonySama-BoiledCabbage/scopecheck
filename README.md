@@ -1,6 +1,6 @@
-# ScopeCheck
+# Manage Your Tasks
 
-A bilingual, local-first project workspace for independent designers. ScopeCheck turns client messages and files into reviewable requirement candidates, with source evidence, formal change review and versioned project baselines.
+A bilingual, local-first project workspace for independent designers. Manage Your Tasks turns client messages and files into reviewable requirement candidates, with source evidence, formal change review and versioned project baselines.
 
 Built from the original ScopeCheck V2 HTML/CSS prototype and Frame local domain services. The original layout is retained; a small TypeScript adapter binds real data and local HTTP services.
 

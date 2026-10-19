@@ -1,10 +1,10 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-test('原始CSS逐字保留，HTML只增加模块入口，原型JS只增加两个空节点保护',()=>{
+test('原始CSS逐字保留，HTML保留结构并更新产品名称与模块入口，原型JS只增加两个空节点保护',()=>{
   const read=(p:string)=>readFileSync(new URL('../'+p,import.meta.url),'utf8').replace(/\r\n/g,'\n')
   assert.equal(read('styles.css'),read('reference/styles.css'))
-  assert.equal(read('index.html'),read('reference/index.html').replace('<script src="app.js"></script>','<script type="module" src="app.js"></script>\n    <script type="module" src="/src/adapter.ts"></script>'))
+  assert.equal(read('index.html'),read('reference/index.html').replace('Frame — Designer Workspace','Manage Your Tasks — Local Project Workspace').replace('Frame — 面向独立设计师的 AI 项目管理原型','Manage Your Tasks — 面向独立设计师的本地 AI 项目管理工作空间').replace('aria-label="Frame 首页"><span>f</span>','aria-label="Manage Your Tasks 首页"><span>M</span>').replace('<script src="app.js"></script>','<script type="module" src="app.js"></script>\n    <script type="module" src="/src/adapter.ts"></script>'))
   assert.equal(read('app.js'),read('reference/app.js').replace("document.getElementById('floatingCapture').onclick", "if(document.getElementById('floatingCapture')) document.getElementById('floatingCapture').onclick").replace("document.getElementById('profileScreen').before", "document.getElementById('profileScreen')?.before"))
 })
 test('适配命令复用真实存储：正式提议、旧表单拒绝、项目切换拒绝、容量失败保护',async()=>{
