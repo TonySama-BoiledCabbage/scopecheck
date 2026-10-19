@@ -6,7 +6,7 @@ import { importFiles, captureText, retrySource, extractWithOllama, useIngest } f
 import { getOriginal } from './lib/media-db.ts'
 import { ItemSchema, type Item, type Decision } from './domain/model.ts'
 import './adapter.css'
-import { frame } from './frame.ts'
+import { frame, draftFromBlock } from './frame.ts'
 import { clearDemoSamples, restoreDemoSamples, DEMO_RECOVERY } from './demo-reset.ts'
 import { dateBand, scheduleEntries, weekStart, calendarPeriod, stepCalendarDate, type CalendarMode } from './schedule.ts'
 import { initI18n, getLanguage } from './i18n.ts'
@@ -35,8 +35,9 @@ const statuses=[['planned','未开始'],['active','进行中'],['done','已完�
 const phases=[['research','调研与定义'],['concept','概念设计'],['development','设计深化'],['delivery','交付与归档']]
 function formData(){return new FormData(document.querySelector<HTMLFormElement>('#frameForm')!)}
 function taskEditor(id?:string,blockId?:string){
-  const session=projectSession(),s=session.read(),original=s.items.find(i=>i.id===id)??null,b=s.blocks.find(b=>b.id===blockId)
-  const item:Item=original??{id:uid(),title:b?.title??'',kind:'task',phase:b?.placement.phase??'research',status:'planned',start:null,end:null,remainingDays:null,goal:b?.description??'',scopeRisk:!!b}
+  const session=projectSession(),s=session.read(),b=s.blocks.find(b=>b.id===blockId)
+  const original=s.items.find(i=>i.id===(id??b?.placement.itemId))??null
+  const item:Item=b?draftFromBlock(s,b):original??{id:uid(),title:'',kind:'task',phase:'research',status:'planned',start:null,end:null,remainingDays:null,goal:'',scopeRisk:false}
   drawer('TASK · FRAME',`<h2>${original?'编辑':'添加'}任务</h2><form id="frameForm" class="center-form">${field('任务名称','title',item.title)}${select('类型','kind',[['task','内部任务'],['milestone','正式里程碑'],['stage','阶段目标']],item.kind)}${select('阶段','phase',phases,item.phase)}${select('状态','status',statuses,item.status)}${field('开始日期','start',item.start,'date')}${field('结束日期','end',item.end,'date')}${field('剩余自然日（未知可留空）','remainingDays',item.remainingDays,'number')}<label>说明<textarea name="goal">${esc(item.goal)}</textarea></label><label><input name="scopeRisk" type="checkbox" ${item.scopeRisk?'checked':''}>涉及范围变更</label></form><p>保存沿用 Frame 校验；正式承诺或范围风险仅记录为变更提议。</p>${errorSlot}<div class="drawer-actions"><button id="saveTask">保存</button><button data-frame-close>取消</button></div>`)
   on('saveTask',async()=>{
     const f=formData(),next={...item,title:String(f.get('title')),kind:String(f.get('kind')) as Item['kind'],phase:String(f.get('phase')) as Item['phase'],status:String(f.get('status')) as Item['status'],start:String(f.get('start'))||null,end:String(f.get('end'))||null,remainingDays:f.get('remainingDays')===''?null:Number(f.get('remainingDays')),goal:String(f.get('goal')),scopeRisk:f.has('scopeRisk')}

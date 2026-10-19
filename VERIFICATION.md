@@ -1,5 +1,12 @@
 # 验证结果
 
+## 复用原 Frame 的录入逻辑（不改 UI）
+
+对照原项目 `src/features/Capture.tsx` 的 EvidenceDialog.apply，恢复内部任务默认语义、placement 关联任务/日期、已有任务说明追加与来源引用、正式节点及既有范围风险保护。提取为适配层 `src/frame.ts` 的纯 draftFromBlock，仍通过 commitBlock、requiresReview 和原持久化写入。原有已提交提议不迁移、不自动批准。
+
+本轮没有修改 index.html、styles.css、app.js、src/adapter.css、src/i18n.ts，任务表单模板逐字未改。39项测试、类型检查、构建通过；新增测试覆盖无日期不虚构日期、已有建议日期继承、关联任务沿用、来源留存、正式节点强制审查。`localhost:5190/tests/review-timeline.html` 的9项真实流程检查通过，包括普通任务默认内部录入、手动勾选风险后进入提议、保存和刷新后时间轴保留；测试在与用户127.0.0.1不同的来源运行。证据：verification/original-materialisation-flow.txt 和 .png。
+
+
 ## 实际 Chrome 待审提议可见性
 
 读取用户实际 Chrome 5190 项目后，确认 Please change the button colour to blue. 已保存为 proposed，拟议日期2026-10-20至2026-10-22；此前正式任务过滤使日历空白。新增只读 scheduleEntries 投影，在首页周历、日/周/月历和项目时间轴以虚线及“待审提议”文字显示 proposed/pending 项目；点击继续原审查，未排期记录单独列出，不虚构日期。没有修改用户提议、任务或基线。撤回/应用状态按最新领域事件自动移除预览，应用后不重复显示提议。

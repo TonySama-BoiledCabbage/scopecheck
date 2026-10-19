@@ -25,13 +25,13 @@ document.querySelector('#run').onclick=async()=>{
   };
   await openReview(ids[0]);$('#frameForm input[name="ack"]').click();$('#confirmBlock').click();await wait(()=>$('#commitBlock'));await tick();
   check(state().items.length===0&&JSON.stringify(state().baselines)===baseline,'confirmation does not change plan or baseline');
-  $('#commitBlock').click();await tick();$('#saveTask').click();await wait(()=>$('#decideChange'));await tick();
+  $('#commitBlock').click();await tick();$('#frameForm input[name="scopeRisk"]').click();$('#saveTask').click();await wait(()=>$('#decideChange'));await tick();
   check(latestChanges(state())[0].status==='proposed'&&state().items.length===0,'scope-risk save opens change review without applying a task');
   $('[data-frame-close]').click();await openReview(ids[0]);
   check(!!$('#drawerBody [data-change-id]'),'submitted candidate retains a review continuation link');
   $('#drawerBody [data-change-id]').click();await tick();check(!!$('#decideChange'),'continuation link reopens the saved change');
   $('[data-frame-close]').click();await openReview(ids[1]);$('#frameForm input[name="ack"]').click();$('#confirmBlock').click();await wait(()=>$('#commitBlock'));await tick();$('#commitBlock').click();await tick();
-  $('#frameForm input[name="title"]').value='  Internal review checklist  ';$('#frameForm input[name="scopeRisk"]').click();
+  $('#frameForm input[name="title"]').value='  Internal review checklist  ';check(!$('#frameForm input[name="scopeRisk"]').checked,'ordinary task defaults to original Frame internal-task flow');
   $('#frameForm input[name="start"]').value='2026-10-20';$('#frameForm input[name="end"]').value='2026-10-21';$('#saveTask').click();
   await wait(()=>!$('#detailDrawer').classList.contains('open')&&$('#planPanel').classList.contains('active'));
   const task=state().items.find(i=>i.title==='Internal review checklist');
