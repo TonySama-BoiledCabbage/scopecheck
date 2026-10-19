@@ -1,0 +1,7 @@
+/* Only functional additions for bound forms; original styles.css stays byte-identical. */
+[hidden] { display: none !important; }
+#frameForm { display: grid; gap: 12px; }
+#frameForm label { display: grid; gap: 5px; }
+#frameForm input, #frameForm select, #frameForm textarea { max-width: 100%; padding: 8px; font: inherit; }
+#frameForm input[type=checkbox] { justify-self: start; }
+#formError { color: #a33323; }

@@ -1,9 +1,13 @@
 """Local, read-only media extraction. stdout is one JSON result; no source code is executed."""
 import sys
+import os
 from pathlib import Path
 
+sys.dont_write_bytecode = True  # Keep reused parser dependencies read-only.
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / ".parser"))
+if os.environ.get('FRAME_PARSER_PATH'):
+    sys.path.insert(0, os.environ['FRAME_PARSER_PATH'])
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
@@ -163,7 +167,7 @@ def extract(path, name, mime):
         from faster_whisper import WhisperModel
         with av.open(str(path)) as container:
             if container.duration and container.duration/av.time_base > 1800: raise ValueError("单次最多转写 30 分钟，请拆分录音。")
-        model_path = ROOT / ".models" / "whisper-tiny"
+        model_path = Path(os.environ.get('FRAME_MODELS_PATH', str(ROOT / '.models'))) / 'whisper-tiny'
         if not (model_path / "model.bin").exists(): raise ValueError("本地语音模型未安装，请先运行 npm run setup:parser。")
         model = WhisperModel(str(model_path), device="cpu", compute_type="int8", cpu_threads=4, local_files_only=True)
         segments, info = model.transcribe(str(path), beam_size=3, vad_filter=True)

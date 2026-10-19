@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-19T01:56:30.045Z",
+  "base": "http://127.0.0.1:5190",
+  "results": [
+    {
+      "name": "页面和适配入口可访问",
+      "result": "PASS"
+    },
+    {
+      "name": "真实TXT解析保留证据",
+      "result": "PASS"
+    },
+    {
+      "name": "真实文件解析 brief.pdf",
+      "result": "PASS"
+    },
+    {
+      "name": "真实文件解析 brief.png",
+      "result": "PASS"
+    },
+    {
+      "name": "缺少本机调用头被拒绝",
+      "result": "PASS"
+    },
+    {
+      "name": "外部Origin被拒绝",
+      "result": "PASS"
+    },
+    {
+      "name": "不支持格式返回真实失败",
+      "result": "PASS"
+    },
+    {
+      "ollama": "未连接本机Ollama。请启动本地服务并安装模型；也可明确选择规则整理。"
+    },
+    {
+      "name": "Ollama状态返回可用模型或明确错误",
+      "result": "PASS"
+    }
+  ]
+}

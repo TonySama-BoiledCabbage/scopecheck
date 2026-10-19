@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-19T01:54:15.188Z",
+  "project": "frame-project:0f1f535b-fa46-4909-8ebb-d829421508d3",
+  "status": "PASS",
+  "results": [
+    {
+      "name": "真实项目创建与任务持久化",
+      "result": "PASS"
+    },
+    {
+      "name": "真实文件批次：TXT成功、不支持格式失败、两份原件均留存",
+      "result": "PASS"
+    },
+    {
+      "name": "规则候选明确标识；确认内容不改变任务或基线",
+      "result": "PASS"
+    },
+    {
+      "name": "落实范围需求仅记录提议，待确认不应用；缺失批准依据拒绝",
+      "result": "PASS"
+    },
+    {
+      "name": "正式交付日提议不自动改期，批准才追加新基线",
+      "result": "PASS"
+    },
+    {
+      "name": "项目切换不串写；另一个项目不出现文件、任务或基线",
+      "result": "PASS"
+    },
+    {
+      "name": "localStorage容量失败保留原件与输入，重试可恢复",
+      "result": "PASS"
+    }
+  ],
+  "ollama": "成功生成未验证：本机Ollama未连接"
+}

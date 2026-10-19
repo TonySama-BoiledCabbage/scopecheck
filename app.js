@@ -186,7 +186,7 @@ function v2OpenEditor(title='编辑任务') {
   document.querySelector('[data-close-drawer-inner]').onclick=closeDrawer;
 }
 document.querySelectorAll('.cal-event,.timeline-strip,.roadbar,.matrix-task').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();v2OpenEditor(el.innerText.trim().split('\n')[0])},true));
-document.getElementById('floatingCapture').onclick=()=>{modal.classList.add('open');modal.setAttribute('aria-hidden','false')};
+if(document.getElementById('floatingCapture')) document.getElementById('floatingCapture').onclick=()=>{modal.classList.add('open');modal.setAttribute('aria-hidden','false')};
 
 const reviewScreen=document.createElement('section');
 reviewScreen.className='view'; reviewScreen.id='reviewsScreen'; reviewScreen.dataset.view='reviews';
@@ -198,7 +198,7 @@ reviewScreen.innerHTML='<div class="page"><header class="topbar"><h1>待确认</
  ['tone','Northline','品牌语气更专业还是更亲切？','客户 · Meeting'],
  ['deadline','Orbit','提前发布后哪些内容优先？','老板 · 电话']
 ].map(x=>'<article class="review-line"><span class="status-orb pending"></span><div><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div><small>'+x[1]+' · AI 已生成文字</small><button class="confirm-action" data-v2-confirm="'+x[0]+'">去确认</button></article>').join('')+'</div></div>';
-document.getElementById('profileScreen').before(reviewScreen);
+document.getElementById('profileScreen')?.before(reviewScreen);
 const rail=document.querySelector('.rail-nav'); if(rail){const b=document.createElement('button');b.className='rail-item';b.dataset.nav='reviews';b.innerHTML='<span class="rail-icon">◇</span><small>确认</small><i class="nav-dot">6</i>';rail.insertBefore(b,rail.lastElementChild);b.onclick=()=>navigate('reviews')}
 const bottom=document.querySelector('.bottom-nav'); if(bottom){const b=document.createElement('button');b.className='nav-btn';b.dataset.go='reviews';b.innerHTML='<b>◇</b><span>Confirm</span>';bottom.insertBefore(b,bottom.lastElementChild);b.onclick=()=>navigate('reviews')}
 document.querySelectorAll('[data-v2-confirm]').forEach(b=>b.onclick=()=>v2OpenConfirm(b.dataset.v2Confirm));
