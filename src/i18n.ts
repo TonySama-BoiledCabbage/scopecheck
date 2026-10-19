@@ -4,6 +4,7 @@ export type Language='en'|'zh'
 let language:Language='en'
 export const getLanguage=()=>language
 const additions:[string,string][]=[
+  ['当前项目的日期范围；未设置小时排期。','Date ranges for the current project. No hourly appointments.'],['上一周','Previous week'],['下一周','Next week'],['选择日期','Choose date'],['今天','Today'],['未定结束日期','No end date'],['未排期','Unscheduled'],['未定','Not set'],
   ['主导航','Main navigation'],['个人设置','Workspace Settings'],
   ['规则整理与本地 AI 的候选分别标识；确认内容不会批准改期。','Rule-based and local AI suggestions are labelled separately. Confirming content does not approve a deadline change.'],
   ['保存沿用 Frame 校验；正式承诺或范围风险仅记录为变更提议。','Frame validates every save. Formal commitments and scope risks are recorded as change proposals.'],
@@ -96,7 +97,7 @@ export function initI18n(){
       const rendered=translate(base,language);originals.set(node,{base,rendered});if(text!==rendered)node.nodeValue=rendered
     }
     document.querySelectorAll('[placeholder],[title],[aria-label]').forEach(element=>{
-      if(element.closest('[data-no-i18n="true"]'))return
+      if(element.closest('[data-no-i18n="true"]')||element.matches('[data-task-id]'))return
       const saved=attributes.get(element)??new Map()
       for(const name of ['placeholder','title','aria-label']){
         const text=element.getAttribute(name);if(text===null)continue
@@ -108,6 +109,6 @@ export function initI18n(){
     toggle.textContent=language==='en'?'中文':'English';toggle.setAttribute('aria-label',language==='en'?'Switch to Chinese':'切换为英文')
     observer.observe(document.body,{subtree:true,childList:true,characterData:true})
   }
-  toggle.onclick=()=>{language=language==='en'?'zh':'en';try{localStorage.setItem('scopecheck-language',language)}catch{/* Keep the current session usable. */}apply()}
+  toggle.onclick=()=>{language=language==='en'?'zh':'en';try{localStorage.setItem('scopecheck-language',language)}catch{/* Keep the current session usable. */}window.dispatchEvent(new Event('scopecheck-language'));apply()}
   apply()
 }

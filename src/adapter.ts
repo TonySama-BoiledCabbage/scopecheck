@@ -7,6 +7,7 @@ import { getOriginal } from './lib/media-db.ts'
 import type { Item, Decision } from './domain/model.ts'
 import './adapter.css'
 import { frame } from './frame.ts'
+import { dateBand, weekStart } from './schedule.ts'
 import { initI18n, getLanguage } from './i18n.ts'
 
 const $=(s:string)=>document.querySelector<HTMLElement>(s)!
@@ -14,12 +15,13 @@ const esc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 const userText=(v:unknown)=>`<span data-no-i18n="true">${esc(v)}</span>`
 const state=frame.read
 let toastTimer:ReturnType<typeof setTimeout>, models:string[]=[]
+let calendarDate=today()
 let aiStatus='Ollama：检测中…'
 function notice(message:string){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),5000)}
 function close(){ $('#detailDrawer').classList.remove('open');$('#detailDrawer').setAttribute('aria-hidden','true') }
 function selectProject(key:string){openProject(key);history.replaceState(null,'',`#project/${encodeURIComponent(key)}`)}
 function drawer(title:string,html:string){$('#drawerEyebrow').textContent=title;$('#drawerBody').innerHTML=html;$('#detailDrawer').classList.add('open');$('#detailDrawer').setAttribute('aria-hidden','false');$('#drawerBody input, #drawerBody button')?.focus()}
-function nav(view:string){document.querySelectorAll<HTMLElement>('.view').forEach(x=>x.classList.toggle('active',x.dataset.view===view));document.querySelectorAll<HTMLElement>('.rail-item').forEach(x=>x.classList.toggle('active',x.dataset.nav===view))}
+function nav(view:string){document.querySelectorAll<HTMLElement>('.view').forEach(x=>x.classList.toggle('active',x.dataset.view===view));document.querySelectorAll<HTMLElement>('.rail-item').forEach(x=>x.classList.toggle('active',x.dataset.nav===view));window.scrollTo(0,0)}
 function on(id:string,fn:()=>unknown){document.getElementById(id)!.onclick=()=>void action(fn)}
 let pending=false
 async function action(fn:()=>unknown){if(pending)return;pending=true;try{await fn()}catch(e){const msg=e instanceof Error?e.message:String(e);const error=document.getElementById('formError');if(error)error.textContent=msg;notice(msg)}finally{pending=false}}
@@ -84,21 +86,24 @@ function render(){
   $('.todo-panel .count-badge').textContent=String(s.items.length)
   const taskRows=s.items.map(i=>`<article data-task-id="${esc(i.id)}" tabindex="0" role="button"><small>${esc(i.phase)}</small><b>${esc(i.title)}</b><p>${esc(statuses.find(x=>x[0]===i.status)?.[1])} · ${esc(i.end??'未排期')}</p></article>`).join('')
   $('.kanban').innerHTML=`<div class="kanban-col">${taskRows||'<p>尚无工作项，点击添加任务。</p>'}</div>`;$('.board-panel h2').textContent=`${s.project.name} 待办`
-  // Frame stores dates, not hours. Keep the original weekly columns and event blocks,
-  // explicitly label them as date ranges rather than inventing 09:00 appointments.
-  const current=today(),monday=addDays(current,-((new Date(current+'T12:00:00').getDay()+6)%7))
+  // Date-only records share an inclusive projection in both calendars and the timeline.
+  const current=today(),monday=weekStart(calendarDate),weekEnd=addDays(monday,6)
+  $('#calendarView .page-heading p').textContent='当前项目的日期范围；未设置小时排期。'
+  $('#calendarSegments').innerHTML=`<button data-week-step="-1" aria-label="上一周">←</button><button data-week-today>今天</button><button data-week-step="1" aria-label="下一周">→</button><label class="week-picker">选择日期 <input type="date" id="calendarDate" value="${calendarDate}"></label><span>${monday} — ${weekEnd}</span>`
   for(const selector of ['.compact-calendar','.full-week']){
-    const container=$(selector),days=selector==='.compact-calendar'?6:7,gutter=days===6?55:60
+    const container=$(selector),start=selector==='.compact-calendar'?weekStart(current):monday
+    if(!container.parentElement!.classList.contains('calendar-scroll')){const wrapper=document.createElement('div');wrapper.className='calendar-scroll';container.before(wrapper);wrapper.append(container)}
+    while(container.querySelectorAll('.day-head').length<7)container.querySelector('.day-head')!.insertAdjacentHTML('afterend','<div class="day-head"><small></small><b></b></div>')
     container.querySelectorAll('.cal-event,.full-event,.frame-empty').forEach(x=>x.remove())
-    container.querySelectorAll<HTMLElement>('.day-head').forEach((x,n)=>{const date=addDays(monday,n);x.hidden=false;x.title=date;x.querySelector('small')!.textContent=new Date(date+'T12:00:00').toLocaleDateString(getLanguage()==='en'?'en-US':'zh-CN',{weekday:'short'});x.querySelector('b')!.textContent=date.slice(-2);x.classList.toggle('today',date===current)})
-    container.querySelectorAll<HTMLElement>('.time-label,.full-time-label').forEach((x,n)=>x.textContent=n===0?'日期':'' )
+    container.querySelectorAll<HTMLElement>('.day-head').forEach((x,n)=>{const date=addDays(start,n);x.hidden=false;x.title=date;x.querySelector('small')!.textContent=new Date(date+'T12:00:00').toLocaleDateString(getLanguage()==='en'?'en-US':'zh-CN',{weekday:'short'});x.querySelector('b')!.textContent=date.slice(-2);x.classList.toggle('today',date===current)})
+    container.querySelectorAll<HTMLElement>('.time-label,.full-time-label,.now-line').forEach(x=>x.hidden=true)
     container.querySelector('.calendar-corner span')!.textContent='日期范围'
-    const now=container.querySelector<HTMLElement>('.now-line');if(now)now.hidden=true
-    const items=s.items.filter(i=>(i.start||i.end)&&(i.start??i.end!)<=addDays(monday,days-1)&&(i.end??i.start!)>=monday)
-    container.insertAdjacentHTML('beforeend',items.map((i,n)=>{const start=Math.max(0,dayDiff(monday,i.start??i.end!)),end=Math.min(days-1,dayDiff(monday,i.end??i.start!));return `<button class="${days===6?'cal-event':'full-event'} blue" data-task-id="${esc(i.id)}" style="left:calc(${gutter}px + (100% - ${gutter}px) * ${start/days});width:calc((100% - ${gutter}px) * ${(end-start+1)/days} - 4px);top:${64+n*62}px;height:56px"><small>${esc(i.start??'未定')} — ${esc(i.end??'未定')} · 无小时排期</small><b>${esc(i.title)}</b></button>`}).join('')||'<p class="frame-empty" style="grid-column:2 / -1;grid-row:2">本周暂无已排期工作项</p>')
+    const items=s.items.map(i=>({item:i,band:dateBand(i,start,7)})).filter(x=>x.band)
+    container.style.gridTemplateRows=`48px repeat(${Math.max(1,items.length)},72px) minmax(80px,1fr)`
+    container.insertAdjacentHTML('beforeend',items.map(({item:i,band},n)=>`<button class="${selector==='.compact-calendar'?'cal-event':'full-event'} blue" data-task-id="${esc(i.id)}" title="${esc(i.title)} · ${esc(i.start??'未定')} — ${esc(i.end??'未定')}" style="grid-column:${band!.offset+2} / span ${band!.length};grid-row:${n+2}"><b>${userText(i.title)}</b><small>${esc(i.start??'未定')} — ${esc(i.end??'未定')}</small></button>`).join('')||'<p class="frame-empty" style="grid-column:2 / -1;grid-row:2">本周暂无已排期工作项</p>')
   }
   const dates=s.items.flatMap(i=>[i.start,i.end]).filter((x):x is string=>!!x).sort(),first=dates[0]??current,last=dates.at(-1)??current,span=Math.max(1,dayDiff(first,last)+1),tickCount=Math.min(5,span)
-  $('.roadmap').innerHTML=`<div class="roadmap-dates" style="grid-template-columns:repeat(${tickCount},1fr)">${Array.from({length:tickCount},(_,n)=>`<span>${addDays(first,Math.round((span-1)*n/Math.max(1,tickCount-1)))}</span>`).join('')}</div>`+s.items.map(i=>`<div class="roadmap-row"><b>${esc(phases.find(x=>x[0]===i.phase)?.[1])}</b><button class="roadbar rb1" style="left:calc(150px + (100% - 150px) * ${i.start?dayDiff(first,i.start)/span:0});width:calc((100% - 150px) * ${i.start&&i.end?(dayDiff(i.start,i.end)+1)/span:0.35})" data-task-id="${esc(i.id)}">${esc(i.title)} · ${esc(i.start??'待安排')} — ${esc(i.end??'待安排')}</button></div>`).join('')
+  $('.roadmap').innerHTML=`<div class="roadmap-content"><div class="roadmap-dates">${Array.from({length:tickCount},(_,n)=>{const offset=Math.round((span-1)*n/Math.max(1,tickCount-1));return `<span style="left:${(offset+.5)/span*100}%">${addDays(first,offset)}</span>`}).join('')}</div>`+s.items.map(i=>{const band=dateBand(i,first,span);return `<div class="roadmap-row"><b>${esc(phases.find(x=>x[0]===i.phase)?.[1])}</b><div class="roadmap-task"><button class="roadmap-label" data-task-id="${esc(i.id)}">${userText(i.title)}<small>${esc(i.start??'未排期')} — ${esc(i.end??'未定结束日期')}</small></button><div class="roadmap-track">${band?`<button class="roadbar rb1" aria-label="${esc(i.title)} · ${esc(i.start??i.end)} — ${esc(i.end??i.start)}" data-task-id="${esc(i.id)}" style="left:${band.offset/span*100}%;width:${band.length/span*100}%"></button>`:''}</div></div></div>`}).join('')+(s.items.length?'':'<p class="frame-empty">当前项目尚无任务</p>')+'</div>'
   const reviewRows=reviews.map(x=>`<button class="review-card" data-block-id="${esc(x.id)}"><span class="status-orb pending"></span><span><small>${esc(x.engine==='rules'?'规则整理（非 AI）':x.engine==='ollama'?'Ollama 本地 AI':'人工整理')}</small><b>${userText(x.title)}</b><p>${esc(x.review.status)}${x.commit?' · 已落实':''}</p></span><em>查看</em></button>`).join('')||'<p>暂无待审核需求。</p>'
   $('.review-list-panel').innerHTML=reviewRows;$('#reviewDetail').innerHTML='<h2>需求审核</h2><p>点击候选查看原文；确认内容不会批准改期。</p>'
   document.querySelectorAll('.nav-dot,.changes-panel .count-badge').forEach(x=>x.textContent=String(reviews.filter(x=>x.review.status==='unreviewed').length))
@@ -141,11 +146,12 @@ document.addEventListener('click',event=>{
   else if(el.matches('.project-summary .icon-button'))fn=()=>projectEditor()
   else if(el.id==='detectAi')fn=detectAi
   else if(el.id==='exportData')fn=()=>exportProject()
-  else if(d.calendarMode)fn=()=>notice('当前显示本周真实日期范围；小时排期和日 / 月视图尚未接入')
+  else if(d.weekStep)fn=()=>{calendarDate=addDays(calendarDate,Number(d.weekStep)*7);render()}
+  else if('weekToday' in d)fn=()=>{calendarDate=today();render()}
   else if(el.matches('.filter-button')&&!el.closest('#drawerBody'))fn=()=>notice('此筛选尚未接入')
   if(fn){event.preventDefault();event.stopImmediatePropagation();void action(fn)}
 },true)
-document.addEventListener('change',event=>{const input=event.target as HTMLInputElement;if(!input.dataset.taskToggle)return;event.stopImmediatePropagation();const original=state().items.find(x=>x.id===input.dataset.taskToggle)!;void action(async()=>{try{const next=await frame.saveTask({...original,status:input.checked?'done':'planned'},original);notice(next.items.find(x=>x.id===original.id)?.status===(input.checked?'done':'planned')?'任务状态已保存':'已记录变更提议；任务状态未变')}finally{render()}})},true)
+document.addEventListener('change',event=>{const input=event.target as HTMLInputElement;if(input.id==='calendarDate'){if(input.value){calendarDate=input.value;render()}return;}if(!input.dataset.taskToggle)return;event.stopImmediatePropagation();const original=state().items.find(x=>x.id===input.dataset.taskToggle)!;void action(async()=>{try{const next=await frame.saveTask({...original,status:input.checked?'done':'planned'},original);notice(next.items.find(x=>x.id===original.id)?.status===(input.checked?'done':'planned')?'任务状态已保存':'已记录变更提议；任务状态未变')}finally{render()}})},true)
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target as HTMLElement).dataset.taskId){e.preventDefault();taskEditor((e.target as HTMLElement).dataset.taskId)}if(e.key==='Escape'){close();if(!useIngest.getState().busy)$('#captureModal').classList.remove('open')}})
 $('#globalSearch').addEventListener('input',e=>{e.stopImmediatePropagation();search()},true);$('#globalSearch').addEventListener('focus',e=>{e.stopImmediatePropagation();search()},true)
 document.addEventListener('submit',e=>e.preventDefault())
@@ -159,5 +165,6 @@ window.addEventListener('storage',event=>{try{if(event.key===null||event.key===u
 // The V2 appended review screen has no matching HTML anchor; retain the original review view.
 document.querySelectorAll('.rail-item[data-nav="reviews"]').forEach((x,i)=>{if(i)x.remove()})
 try{const key=location.hash.match(/^#project\/([^/]+)/)?.[1];if(key)openProject(decodeURIComponent(key))}catch(e){notice(String(e))}
+window.addEventListener('scopecheck-language',render)
 render();initI18n();void detectAi()
 
