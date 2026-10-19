@@ -3,7 +3,7 @@ A local-first, bilingual (EN/中文) workspace that helps freelance designers ca
 
 Clients ask for "one small change" in a call, send references in chat, and mention deadlines in passing. Manage Your Tasks keeps the original messages and files. Google's open-weight Gemma 3 1B runs on your own machine through Ollama and flags possible requests and explicit dates. Every suggestion is tied to its source text, and nothing becomes a task, a scope change or a new deadline until a person approves it.
 
-🎥 Demo: https://youtu.be/RJOVkdFahs8 📝 DEV post: 🏷️ Hacktoberfest 2026 Week 2 snapshot: ../../tree/hacktoberfest-week2-candidate-v1
+🎥 Demo: https://youtu.be/RJOVkdFahs8 📝 DEV post: pending publication — 🏷️ Hacktoberfest 2026 Week 2 snapshot: ../../tree/hackathon-week2-candidate-v1
 
 Features
 Source-first review. Messages and files are stored as originals, and every AI suggestion links back to the exact excerpt it came from.
@@ -88,7 +88,7 @@ DD998855 (DEV)
 Built on the original ScopeCheck V2 HTML/CSS prototype and Frame's local domain services. A small TypeScript adapter connects the original layout to real data and local services.
 
 Hacktoberfest 2026 submission
-Built for the Hacktoberfest Open-Source AI Challenge, Week 2: Side Hustle. The Week 2 cutoff was 2026-10-19 06:59 UTC. The tag hacktoberfest-week2-candidate-v1 is frozen. Later work is listed below and is not part of the submitted entry.
+Built for the Hacktoberfest Open-Source AI Challenge, Week 2: Side Hustle. The Week 2 cutoff was 2026-10-19 06:59 UTC. The frozen `hackathon-week2-candidate-v1` verification record uses Qwen 2.5 1.5B. The current local demo and ongoing maintenance prioritize Gemma 3 1B through Ollama. These are distinct versions; the frozen Qwen snapshot is not presented as evidence for a Gemma prize entry. Later work is listed below and is not part of the frozen snapshot.
 
 Post-deadline commit	Date (UTC)	Change
 —	—	—
