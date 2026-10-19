@@ -1,0 +1,66 @@
+- complementary "主导航":
+  - button "Frame 首页":
+    - generic: f
+  - navigation:
+    - button "首页":
+      - generic: ⌂
+      - generic: 首页
+    - button "项目":
+      - generic: ▦
+      - generic: 项目
+    - button "时间":
+      - generic: □
+      - generic: 时间
+    - button "◇ 确认 3":
+      - generic: ◇
+      - generic: 确认
+      - generic: "3"
+  - button "个人设置": MC
+- main:
+  - generic: ⌕
+  - searchbox "搜索项目、任务、需求或来源…"
+  - generic: ⌘ K
+  - button "＋ 捕捉新信息"
+  - generic: REQUIREMENT REVIEW
+  - heading "待确认" [level=1]
+  - paragraph: 规则整理与本地 AI 的候选分别标识；确认内容不会批准改期。
+  - button "＋ 添加信息"
+  - button "规则整理（非 AI） 请增加地图搜索和区域筛选。 unreviewed 查看":
+    - text: 规则整理（非 AI）
+    - generic: 请增加地图搜索和区域筛选。
+    - paragraph: unreviewed
+    - emphasis: 查看
+  - button "规则整理（非 AI） 具体筛选条件还没有确定。 unreviewed 查看":
+    - text: 规则整理（非 AI）
+    - generic: 具体筛选条件还没有确定。
+    - paragraph: unreviewed
+    - emphasis: 查看
+  - button "Ollama 本地 AI 添加9:16版本的启动视频 unreviewed 查看":
+    - text: Ollama 本地 AI
+    - generic: 添加9:16版本的启动视频
+    - paragraph: unreviewed
+    - emphasis: 查看
+  - complementary:
+    - heading "需求审核" [level=2]
+    - paragraph: 点击候选查看原文；确认内容不会批准改期。
+- button "关闭"
+- complementary:
+  - generic: REQUIREMENT · FRAME
+  - button "×"
+  - heading "添加9:16版本的启动视频" [level=2]
+  - paragraph: Ollama 本地 AI 候选 · unreviewed
+  - generic: 反馈笔记-2026-10-19T02-19-49-465Z.txt · 文字 · 第 1 行
+  - blockquote: Please add a 9:16 version of the launch video. We still need to confirm whether this is included in the current scope.
+  - text: 标题
+  - textbox "标题" [active]: 添加9:16版本的启动视频
+  - text: 需求说明
+  - textbox "需求说明": 我们还需要确认是否包含在当前范围内。
+  - paragraph: 无规则识别的不确定项；仍需人工核对。
+  - checkbox "已逐条核对不确定项；此操作不批准日期、额度或范围"
+  - text: 已逐条核对不确定项；此操作不批准日期、额度或范围
+  - alert
+  - button "保存修正"
+  - button "确认内容"
+  - button "移除建议"
+  - button "查看原件"
+- generic: Ollama 候选已保存，等待人工审核

@@ -1,0 +1,55 @@
+{
+  "at": "2026-10-19T02:17:58.614Z",
+  "model": "qwen2.5:1.5b",
+  "base": "http://127.0.0.1:5190",
+  "status": "PASS",
+  "results": [
+    {
+      "source": "请增加地图搜索和区域筛选。具体筛选条件还没有确定。",
+      "milliseconds": 38724,
+      "result": "PASS",
+      "suggestions": [
+        {
+          "evidenceIndex": 0,
+          "quote": "请增加地图搜索和区域筛选。具体筛选条件还没有确定。",
+          "title": "增加地图搜索和区域筛选",
+          "description": "用户希望增加地图搜索和区域筛选功能，但尚未确定具体的筛选条件。",
+          "uncertainties": [
+            "具体筛选条件尚未确定",
+            "用户需求不明确"
+          ]
+        }
+      ]
+    },
+    {
+      "source": "Please add a 9:16 version of the launch video. We still need to confirm whether this is included in the current scope.",
+      "milliseconds": 748,
+      "result": "PASS",
+      "suggestions": [
+        {
+          "evidenceIndex": 0,
+          "quote": "Please add a 9:16 version of the launch video. We still need to confirm whether this is included in the current scope.",
+          "title": "添加9:16版本的启动视频",
+          "description": "我们还需要确认是否包含在当前范围内。",
+          "uncertainties": []
+        }
+      ]
+    },
+    {
+      "source": "把交付提前到下周五，但还没获得客户的书面确认。",
+      "milliseconds": 578,
+      "result": "PASS",
+      "suggestions": [
+        {
+          "evidenceIndex": 0,
+          "quote": "把交付提前到下周五，但还没获得客户的书面确认。",
+          "title": "客户未确认交付时间",
+          "description": "客户尚未确认交付时间，可能需要进一步沟通和确认。",
+          "uncertainties": [
+            "客户可能未收到通知，导致未确认。"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,17 @@
 # 验证结果
 
+## 后续更新：本地模型已部署并实测
+
+用户随后授权部署本地 Qwen。现在 Ollama 0.40.6 与 `qwen2.5:1.5b` 已在同一工作目录运行，使用 RTX 4060 Laptop GPU；模型约986MB，量化 Q4_K_M。没有改系统 PATH 或配置开机自启动。运行程序来自官方发布，SHA256 与官方校验文件一致。见 `verification/deployment.json` 与 `verification/QWEN_MODEL_LICENSE.txt`。
+
+`node scripts/verify-ai.mjs` 通过 ScopeCheck 真实接口提交3份合成反馈，均返回结构合法、非空且有逐字原文引用的候选。首次模型加载与推理合计38724ms，后两次748ms、578ms。这是本机单次实测，不是性能保证。完整输入和输出见 `verification/ollama-live.json`。
+
+Chrome 原型页面也已走通：保存英文原文 → 原件卡片 → 选择本地模型 → Ollama 整理 → 待确认中出现真实 AI 候选 → 打开原文审核。候选“添加9:16版本的启动视频”已持久化于明确命名的“ScopeCheck · 本地 Qwen 演示”项目，尚未人工确认，不会自动改变正式计划。证据见 `verification/ollama-ui.txt` 与 `verification/ollama-candidate.jpg`。
+
+真实限制：中文双片段测试产生了无法对应片段的引用，系统拒绝保存，原件与规则候选保留。三份接口测试虽然通过结构/引用校验，其中模糊改期样例的不确定项还包含了“客户可能未收到通知”等原文不支持的推测；因此通过技术校验不等于语义全部正确，仍须人审。本轮没有放松校验、替换成演示假数据或宣称模型准确率。录屏建议使用 `LOCAL_AI_GUIDE.md` 中的短反馈。
+
+以下是模型部署之前的初始接入验证记录，其中“Ollama 未连接”描述当时的状态，已由上面的部署证据更新。
+
 验证日期：2026-10-18（America/Toronto；原始证据 JSON 使用 UTC）。独立服务地址 `http://127.0.0.1:5190`，没有操作其他端口中的真实项目。
 
 ## 自动检查
