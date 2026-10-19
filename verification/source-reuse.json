@@ -1,46 +1,57 @@
 [
   {
     "file": "src/store/project.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "src/lib/ingest.ts",
-    "matchesOriginal": true
+    "matchesOriginal": false,
+    "note": "Optional language parameter added; original validation retained."
   },
   {
     "file": "src/lib/media-db.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "scripts/parser-plugin.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "scripts/local-ai-plugin.ts",
-    "matchesOriginal": true
+    "matchesOriginal": false,
+    "note": "Optional language parameter added; original validation retained."
   },
   {
     "file": "src/domain/capture-model.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "src/domain/capture.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "src/domain/engine.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "src/domain/model.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "src/domain/projects.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   },
   {
     "file": "src/domain/seed.ts",
-    "matchesOriginal": true
+    "matchesOriginal": true,
+    "note": "Reused unchanged."
   }
 ]

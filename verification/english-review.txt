@@ -1,0 +1,65 @@
+- complementary "Main navigation":
+  - button "Frame Home":
+    - generic: f
+  - navigation:
+    - button "Home":
+      - generic: ⌂
+      - generic: Home
+    - button "Projects":
+      - generic: ▦
+      - generic: Projects
+    - button "Calendar":
+      - generic: □
+      - generic: Calendar
+    - button "◇ Review 2":
+      - generic: ◇
+      - generic: Review
+      - generic: "2"
+  - button "Workspace Settings": MC
+- main:
+  - generic: ⌕
+  - searchbox "Search projects, tasks, requirements, or sources…"
+  - generic: ⌘ K
+  - button "Switch to Chinese": 中文
+  - button "＋ Capture Context"
+  - generic: REQUIREMENT REVIEW
+  - heading "Needs review" [level=1]
+  - paragraph: Rule-based and local AI suggestions are labelled separately. Confirming content does not approve a deadline change.
+  - button "＋ Add Information"
+  - button "Ollama Local AI Add 9:16 Launch Video Version unreviewed View":
+    - text: Ollama Local AI
+    - generic: Add 9:16 Launch Video Version
+    - paragraph: unreviewed
+    - emphasis: View
+  - button "Ollama Local AI Add a 9:16 Launch Video Cut unreviewed View":
+    - text: Ollama Local AI
+    - generic: Add a 9:16 Launch Video Cut
+    - paragraph: unreviewed
+    - emphasis: View
+  - complementary:
+    - heading "Requirement Review" [level=2]
+    - paragraph: Open a suggestion to review its source. Confirming content does not approve rescheduling.
+- button "Close"
+- complementary:
+  - generic: REQUIREMENT · FRAME
+  - button "×"
+  - heading "Add a 9:16 Launch Video Cut" [level=2]
+  - paragraph: Ollama Local AI Suggestion · unreviewed
+  - generic: Feedback-note-2026-10-19T02-36-30-113Z.txt · Text · Line 1
+  - blockquote: Please add a 9:16 cut of the launch video. Confirm scope and client approval before scheduling.
+  - text: Title
+  - textbox "Title" [active]: Add a 9:16 Launch Video Cut
+  - text: Requirement description
+  - textbox "Requirement description": Please add a 9:16 cut of the launch video. Confirm the scope and client approval before scheduling the project.
+  - paragraph:
+    - text: The client may not be available for approval.
+    - text: The scope of work may not be clear.
+    - text: The video cut may not be suitable for the client's preferences.
+  - checkbox "I have reviewed the uncertainties. This does not approve dates, allowances, or scope."
+  - text: I have reviewed the uncertainties. This does not approve dates, allowances, or scope.
+  - alert
+  - button "Save Edits"
+  - button "Confirm Content"
+  - button "Dismiss Suggestion"
+  - button "View Original"
+- generic: Copied

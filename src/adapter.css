@@ -5,3 +5,14 @@
 #frameForm input, #frameForm select, #frameForm textarea { max-width: 100%; padding: 8px; font: inherit; }
 #frameForm input[type=checkbox] { justify-self: start; }
 #formError { color: #a33323; }
+.language-switch { min-width: 76px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: white; color: var(--ink); font: inherit; cursor: pointer; }
+.language-switch:focus-visible { outline: 3px solid var(--marine); outline-offset: 2px; }
+.task-item { grid-template-columns: 20px 8px minmax(0, 1fr); }
+.task-copy { min-width: 0; }
+.task-copy b, .task-copy small { white-space: normal; overflow-wrap: anywhere; }
+.todo-panel { display: flex; flex-direction: column; }
+.todo-panel .task-list { min-height: 0; overflow-y: auto; flex: 1; }
+.todo-panel .panel-head, .todo-panel .panel-link { flex-shrink: 0; }
+.week-calendar .day-head { padding: 5px 4px; }
+.day-head b { white-space: nowrap; }
+.calendar-corner { padding: 10px 4px; }

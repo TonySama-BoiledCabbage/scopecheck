@@ -75,10 +75,10 @@ export async function retrySource(id:string) {
   try{await sequence([id],cancellation.signal,session)}finally{useIngest.setState({busy:false,progress:'处理结束；人工位置不会被覆盖。'});cancellation=null}
 }
 
-export async function captureText(text:string) {
+export async function captureText(text:string,language:'en'|'zh'='zh') {
   if(useIngest.getState().busy)throw Error('请等待当前处理结束。')
   if(!text.trim())throw Error('请先输入客户反馈或会议笔记。')
-  const session=projectSession(),file=new File([text],`反馈笔记-${new Date().toISOString().replace(/[:.]/g,'-')}.txt`,{type:'text/plain'})
+  const session=projectSession(),file=new File([text],`${language==='en'?'Feedback-note':'反馈笔记'}-${new Date().toISOString().replace(/[:.]/g,'-')}.txt`,{type:'text/plain'})
   const hash=await sha256(await file.arrayBuffer())
   session.read()
   await importFiles([file],session)
@@ -86,7 +86,7 @@ export async function captureText(text:string) {
   if(!source||source.status!=='ready')throw Error(useIngest.getState().error||'原文处理未完成，输入保留，请重试。')
   return source.id
 }
-export async function extractWithOllama(sourceId:string,model:string) {
+export async function extractWithOllama(sourceId:string,model:string,language:'en'|'zh'='zh') {
   if(useIngest.getState().busy)throw Error('请等待当前处理结束。')
   const session=projectSession(),{run}=session
   const units=[...new Map(session.read().blocks.filter(b=>b.sourceId===sourceId).map(b=>[JSON.stringify(b.evidence),b.evidence])).values()]
@@ -94,7 +94,7 @@ export async function extractWithOllama(sourceId:string,model:string) {
   useIngest.setState({busy:true,error:'',progress:'本地AI正在整理需求；原件已保存…',freshIds:[]})
   cancellation=new AbortController()
   try{
-    const response=await fetch('/api/local-ai/extract',{method:'POST',headers:{'X-Frame-Parser':'local-v1','Content-Type':'application/json'},body:JSON.stringify({model,units}),signal:cancellation.signal})
+    const response=await fetch('/api/local-ai/extract',{method:'POST',headers:{'X-Frame-Parser':'local-v1','Content-Type':'application/json'},body:JSON.stringify({model,units,language}),signal:cancellation.signal})
     const raw=await response.json();if(!response.ok)throw Error(raw.error||'本地AI提取失败。')
     const result=validateAiSuggestions(raw,units)
     const keys=await Promise.all(result.suggestions.map(part=>sha256(new TextEncoder().encode(JSON.stringify({part,evidence:units[part.evidenceIndex]})))))

@@ -1,5 +1,7 @@
 # 接口与能力映射
 
+语言扩展：`/api/local-ai/extract` 可选传入 `language: "en" | "zh"`，省略时沿用中文；响应头 `X-Frame-AI-Language` 表示本次请求语言。`extractWithOllama(sourceId,model,language?)` 和 `captureText(text,language?)` 支持同一参数。英文界面请求英文候选，quote仍须逐字对应原文；原有schema、证据校验与审核门槛保持。
+
 ## 存储架构
 
 没有 `/api/projects`、`/api/tasks` 等服务端 CRUD。浏览器命令复用原项目 `frame-project-v1` / `frame-project:<UUID>` 元数据；每次写入使用 Web Locks、revision 和 schema 校验，写入成功后才发布内存状态。IndexedDB 保存原件 Blob，以 SHA256 为键，项目 metadata 保存来源和证据定位。项目切换绑定会话，旧会话拒绝继续写入。

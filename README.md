@@ -1,5 +1,7 @@
 # ScopeCheck V2 → Frame 本地适配
 
+已恢复右上角中英文切换，首次默认英文并记住选择。任务竖排与日历日期换行已修复，详见 `BILINGUAL_FIX.md`。已有中文项目和原文不会被自动改写。英文演示可使用新建的 `ScopeCheck English Demo` 项目。
+
 前端基础是用户指定的 `ScopeCheck_Web_Prototype_V2`。没有使用 ScopeApp.tsx，没有创建云端项目数据库。项目、工作项、审核、变更和基线继续使用 Frame 的 localStorage；文件原件继续使用 IndexedDB `frame-originals/files`。
 
 独立 Git 仓库，分支 `scopecheck/frame-adapter`。原型原件留在 `reference/`，Frame 的 domain、store、ingest、media-db 直接复制复用；主项目及其他演示未修改。
@@ -51,12 +53,12 @@ localStorage 和 IndexedDB 按完整来源（协议、主机、端口、浏览�
 
 - `src/frame.ts`：小型项目/任务/审核/变更命令接口，全部通过原 store 的锁和校验写入。
 - `src/adapter.ts`：原型 DOM 的数据绑定、原有弹窗中的必要表单和命令调用；在捕获阶段拦截原演示的数据动作，防止虚假成功提示。
-- `src/domain/`、`src/store/project.ts`、`src/lib/ingest.ts`、`src/lib/media-db.ts`：原 Frame 实现，保持不改。
-- `scripts/parser-plugin.ts`、`scripts/local-ai-plugin.ts`：原 HTTP 插件，保持不改。
+- `src/domain/`、`src/store/project.ts`、`src/lib/media-db.ts`：原 Frame 实现，保持不改；`src/lib/ingest.ts` 仅补可选语言参数及新笔记文件名本地化。
+- `scripts/parser-plugin.ts` 保持原实现；`scripts/local-ai-plugin.ts` 复用原调用与校验，仅补可选输出语言和提示词。
 - `scripts/extract.py`：只补可配置解析包与模型目录，使独立目录复用已有运行环境。
 - `index.html`：仅把原脚本标为模块以支持构建，并增加适配脚本。页面结构不改。
 - `app.js`：仅对 V2 引用的两个不存在节点增加空值保护；其余原脚本保留。
-- `styles.css`：与指定原型 SHA256 完全一致。`src/adapter.css` 仅补原型缺失的 hidden 语义、绑定表单输入可用性和错误显示。
+- `styles.css`：与指定原型 SHA256 完全一致。`src/adapter.css` 补 hidden 语义、表单、语言切换按钮，以及任务行和日期表头的显示修复。
 - `API.md`：能力与按钮映射、命令及 HTTP 协议。
 - `VERIFICATION.md`、`verification/`：真实验证范围和结果。
 

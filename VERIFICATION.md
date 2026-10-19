@@ -1,5 +1,9 @@
 # 验证结果
 
+## 后续更新：中英文切换与显示修复
+
+已恢复语言切换与偏好持久化，修复任务正文错误占用8px列、日期断行及短时间轴重复刻度。浏览器实测任务正文472px宽、38px高，日期数字24px高且不折行。切换不改写输入或原件。类型检查、32项Node检查、构建及真实英文反馈的英文模型生成检查通过。见 `BILINGUAL_FIX.md`、`verification/ollama-english.json`。
+
 ## 后续更新：本地模型已部署并实测
 
 用户随后授权部署本地 Qwen。现在 Ollama 0.40.6 与 `qwen2.5:1.5b` 已在同一工作目录运行，使用 RTX 4060 Laptop GPU；模型约986MB，量化 Q4_K_M。没有改系统 PATH 或配置开机自启动。运行程序来自官方发布，SHA256 与官方校验文件一致。见 `verification/deployment.json` 与 `verification/QWEN_MODEL_LICENSE.txt`。
