@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 const base=process.env.FRAME_TEST_URL||'http://127.0.0.1:5190'
-const model='qwen2.5:1.5b'
+const model='gemma3:1b'
 const language=process.env.FRAME_AI_LANGUAGE||'zh'
 const headers={'X-Frame-Parser':'local-v1','Content-Type':'application/json'}
 const response=await fetch(base+'/api/local-ai/models',{headers})
@@ -8,9 +8,9 @@ assert.equal(response.status,200)
 assert.ok((await response.json()).models.includes(model),'模型尚未安装或不可用')
 const results=[]
 const samples=language==='en'?[
-  'Please add map search and area filters. The filter criteria have not been decided.',
+  'Please add map search and a region filter.',
   'Please add a 9:16 version of the launch video. We still need to confirm whether this is included in the current scope.',
-  'Move delivery to next Friday, but written client approval has not been received.',
+  'Please move delivery to October 23, 2026. This is still awaiting written client approval.',
 ]:[
   '请增加地图搜索和区域筛选。具体筛选条件还没有确定。',
   'Please add a 9:16 version of the launch video. We still need to confirm whether this is included in the current scope.',

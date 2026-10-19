@@ -27,7 +27,7 @@ If Python is not on PATH, copy `.env.example` to `.env.local` and set `FRAME_PYT
 Install [Ollama](https://ollama.com/) yourself and prepare the model explicitly:
 
 ```sh
-ollama pull qwen2.5:1.5b
+ollama pull gemma3:1b
 ollama serve
 ```
 
@@ -35,7 +35,7 @@ If Ollama is already running, do not start a second server. Model download is a 
 
 In **Capture Context**, select **Ollama Local AI**, choose the installed model and save. An existing original can be processed from **Review → Organise Latest Original with Local AI**. English/Chinese interface switching is available in the header.
 
-Qwen classifies source segments locally; a labelled request-wording check and verbatim excerpts constrain the results. Every candidate remains subject to human review. Model mistakes and missed requests remain possible; all original segments can be inspected separately. Rule-based processing is an explicit, separately labelled option, never an invisible fallback. An unavailable Ollama service disables AI processing and shows its status.
+Gemma 3 1B classifies source segments locally; a labelled request-wording check and verbatim excerpts constrain the results. It is preferred by the existing model selector when installed; other installed Ollama models remain selectable. Every candidate remains subject to human review. Model mistakes and missed requests remain possible; all original segments can be inspected separately. Rule-based processing is an explicit, separately labelled option, never an invisible fallback. An unavailable Ollama service disables AI processing and shows its status.
 
 ## Data and approval boundaries
 
@@ -61,15 +61,17 @@ With the dev server running, `/tests/interactions.html` runs a small interface r
 
 ## 中文说明
 
-本项目保留队友原始 ScopeCheck V2 的 HTML、CSS 和布局，通过薄适配层接入 Frame 的本地项目、任务、原件解析、需求审核、正式变更与基线规则。数据保存在当前浏览器来源中，不是云端数据库。使用 `npm ci`、`npm run dev` 启动，打开 5190 页面；本地 AI 使用 Ollama 与 Qwen，规则整理明确单列。时间轴直接创建内容问题暂时搁置。
+本项目保留队友原始 ScopeCheck V2 的 HTML、CSS 和布局，通过薄适配层接入 Frame 的本地项目、任务、原件解析、需求审核、正式变更与基线规则。数据保存在当前浏览器来源中，不是云端数据库。使用 `npm ci`、`npm run dev` 启动，打开 5190 页面；本地 AI 使用 Ollama 与 Gemma 3 1B，规则整理明确单列。时间轴直接创建内容问题暂时搁置。
 
 ## License
 
-Project code is available under the [MIT License](LICENSE). Third-party dependencies and model weights retain their own licenses. Qwen model licensing evidence is retained in [verification/QWEN_MODEL_LICENSE.txt](verification/QWEN_MODEL_LICENSE.txt).
+Project code is available under the [MIT License](LICENSE). Third-party dependencies and model weights retain their own licenses; Gemma is governed by [Google's Gemma Terms of Use](https://ai.google.dev/gemma/terms).
 
 ## Submission snapshot and continued development
 
-The current algorithm is experimental; there is no measured representative accuracy claim. See [MAINTENANCE.md](MAINTENANCE.md) for the current selector, known failure modes, provisional evaluation examples and contribution workflow. The `hackathon-week2-candidate-v1` tag is a frozen candidate, not proof of a published submission. Runtime source baseline: `6f3d3f5b96dd10820e54de5ac68dcf3126341893`.
+The current algorithm is experimental; there is no measured representative accuracy claim. See [MAINTENANCE.md](MAINTENANCE.md) for the current selector, known failure modes, provisional evaluation examples and contribution workflow. The submitted Week 2 snapshot is [`hacktoberfest-week2-v1`](https://github.com/TonySama-BoiledCabbage/scopecheck/tree/hacktoberfest-week2-v1). Earlier candidate tag used Qwen 2.5 1.5B; superseded before submission.
+
+DEV post: pending publication.
 
 Week 2 cutoff is October 19, 2026 at 06:59 UTC (02:59 in Toronto). Keep later maintenance separate from the recorded entry; note every post-deadline commit below as required by the challenge FAQ. Do not move the candidate tag to incorporate later work.
 
@@ -85,6 +87,6 @@ The materialisation logic now reuses the original Frame `features/Capture.tsx` b
 
 ## AI-assisted requirement dates
 
-The local Qwen path now returns an exact `dateQuote` as well as its request classification. A deterministic resolver verifies that phrase against the original unit and resolves ISO dates, full English month dates, Chinese calendar dates, and a limited set of relative calendar-day expressions (such as `within three days` or `三天内`). Relative dates and omitted years require an unambiguous source-message date; upload time is never used as the anchor. Ambiguous numeric dates, unknown years, conflicting dates, business-day arithmetic and vague weekdays remain for manual entry.
+The local Gemma 3 1B path now returns an exact `dateQuote` as well as its request classification. A deterministic resolver verifies that phrase against the original unit and resolves ISO dates, full English month dates, Chinese calendar dates, and a limited set of relative calendar-day expressions (such as `within three days` or `三天内`). Relative dates and omitted years require an unambiguous source-message date; upload time is never used as the anchor. Ambiguous numeric dates, unknown years, conflicting dates, business-day arithmetic and vague weekdays remain for manual entry.
 
 Verified dates populate the existing suggestion placement and existing Create Work Item date fields. Review/confirmation and saving remain separate; task creation is not triggered merely by parsing. Manual placements are preserved. Calendar-only dates are supported; meeting hours remain in source evidence. Formal rescheduling still requires the existing approval path. To check the real installed model without project writes: `node scripts/verify-ai-dates.mjs`. Browser end-to-end check: `/tests/review-timeline.html?ai-dates` (creates a labelled test project; prefer `localhost:5190` to isolate it from a `127.0.0.1` demo).

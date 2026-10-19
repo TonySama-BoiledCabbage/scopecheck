@@ -65,7 +65,7 @@ export function localAiPlugin():Plugin {
         const raw=z.object({done:z.literal(true),message:z.object({content:z.string().max(200000)})}).parse(await response.json())
         const action=Action.parse(JSON.parse(raw.message.content))
         const date=action.dateQuote?resolveDateHint(action.dateQuote,unit):null
-        if(action.actionable)suggestions.push({evidenceIndex,title,quote:unit.text,description:unit.text,uncertainties:date?['建议日期由原文提取，请核对；不代表批准改期。']:action.dateQuote?['日期依据不明确，请人工填写。']:[],...(date?{dateHint:{quote:action.dateQuote!,date}}:{})})
+        if(action.actionable)suggestions.push({evidenceIndex,title,quote:unit.text,description:unit.text,uncertainties:date?[input.language==='en'?'Suggested date was extracted from the source; verify it. This does not approve a schedule change.':'建议日期由原文提取，请核对；不代表批准改期。']:action.dateQuote?[input.language==='en'?'Date evidence is ambiguous; enter it manually.':'日期依据不明确，请人工填写。']:[],...(date?{dateHint:{quote:action.dateQuote!,date}}:{})})
       }
 
       // The model classifies requests after the labelled wording guard. Titles, quotes and descriptions
