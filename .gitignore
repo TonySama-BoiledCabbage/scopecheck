@@ -6,3 +6,8 @@ work/
 .env.local
 __pycache__/
 *.pyc
+
+.env
+.env.*
+!.env.example
+.venv/
