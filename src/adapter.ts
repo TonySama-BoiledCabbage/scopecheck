@@ -7,7 +7,7 @@ import { getOriginal } from './lib/media-db.ts'
 import type { Item, Decision } from './domain/model.ts'
 import './adapter.css'
 import { frame } from './frame.ts'
-import { dateBand, weekStart } from './schedule.ts'
+import { dateBand, weekStart, calendarPeriod, stepCalendarDate, type CalendarMode } from './schedule.ts'
 import { initI18n, getLanguage } from './i18n.ts'
 
 const $=(s:string)=>document.querySelector<HTMLElement>(s)!
@@ -15,7 +15,7 @@ const esc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 const userText=(v:unknown)=>`<span data-no-i18n="true">${esc(v)}</span>`
 const state=frame.read
 let toastTimer:ReturnType<typeof setTimeout>, models:string[]=[]
-let calendarDate=today()
+let calendarDate=today(),calendarMode:CalendarMode='week'
 let aiStatus='Ollama：检测中…'
 function notice(message:string){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),5000)}
 function close(){ $('#detailDrawer').classList.remove('open');$('#detailDrawer').setAttribute('aria-hidden','true') }
@@ -88,9 +88,10 @@ function render(){
   const taskRows=s.items.map(i=>`<article data-task-id="${esc(i.id)}" tabindex="0" role="button"><small>${esc(i.phase)}</small><b>${esc(i.title)}</b><p>${esc(statuses.find(x=>x[0]===i.status)?.[1])} · ${esc(i.end??'未排期')}</p></article>`).join('')
   $('.kanban').innerHTML=`<div class="kanban-col">${taskRows||'<p>尚无工作项，点击添加任务。</p>'}</div>`;$('.board-panel h2').textContent=`${s.project.name} 待办`
   // Date-only records share an inclusive projection in both calendars and the timeline.
-  const current=today(),monday=weekStart(calendarDate),weekEnd=addDays(monday,6)
+  const current=today(),period=calendarPeriod(calendarDate,calendarMode),monday=weekStart(calendarDate)
   $('#calendarView .page-heading p').textContent='当前项目的日期范围；未设置小时排期。'
-  $('#calendarSegments').innerHTML=`<button data-week-step="-1" aria-label="上一周">←</button><button data-week-today>今天</button><button data-week-step="1" aria-label="下一周">→</button><label class="week-picker">选择日期 <input type="date" id="calendarDate" value="${calendarDate}"></label><span>${monday} — ${weekEnd}</span>`
+  $('#calendarSegments').innerHTML=`${(['day','week','month'] as const).map((mode,n)=>`<button data-calendar-mode="${mode}" class="${calendarMode===mode?'active':''}" aria-pressed="${calendarMode===mode}">${['日视图','周视图','月视图'][n]}</button>`).join('')}<button data-calendar-step="-1" aria-label="上一个周期">←</button><button data-week-today>今天</button><button data-calendar-step="1" aria-label="下一个周期">→</button><label class="week-picker">选择日期 <input type="date" id="calendarDate" value="${calendarDate}"></label><span>${period.start}${period.end===period.start?'':' — '+period.end}</span>`
+
   for(const selector of ['.compact-calendar','.full-week']){
     const container=$(selector),start=selector==='.compact-calendar'?weekStart(current):monday
     if(!container.parentElement!.classList.contains('calendar-scroll')){const wrapper=document.createElement('div');wrapper.className='calendar-scroll';container.before(wrapper);wrapper.append(container)}
@@ -103,6 +104,19 @@ function render(){
     container.style.gridTemplateRows=`48px repeat(${Math.max(1,items.length)},72px) minmax(80px,1fr)`
     container.insertAdjacentHTML('beforeend',items.map(({item:i,band},n)=>`<button class="${selector==='.compact-calendar'?'cal-event':'full-event'} blue" data-task-id="${esc(i.id)}" title="${esc(i.title)} · ${esc(i.start??'未定')} — ${esc(i.end??'未定')}" style="grid-column:${band!.offset+2} / span ${band!.length};grid-row:${n+2}"><b>${userText(i.title)}</b><small>${esc(i.start??'未定')} — ${esc(i.end??'未定')}</small></button>`).join('')||'<p class="frame-empty" style="grid-column:2 / -1;grid-row:2">本周暂无已排期工作项</p>')
   }
+  const weekWrapper=$('.full-week').parentElement!;weekWrapper.hidden=calendarMode!=='week'
+  let extra=document.getElementById('calendarExtra')
+  if(!extra){extra=document.createElement('div');extra.id='calendarExtra';$('.full-calendar-panel').append(extra)}
+  extra.hidden=calendarMode==='week'
+  const eventButton=(i:Item)=>`<button class="calendar-task blue" data-task-id="${esc(i.id)}" title="${esc(i.title)} · ${esc(i.start??'')} — ${esc(i.end??'')}"><b>${userText(i.title)}</b><small>${esc(i.start??'未定')} — ${esc(i.end??'未定')}</small></button>`
+  const dayItems=(date:string)=>s.items.filter(i=>dateBand(i,date,1))
+  if(calendarMode==='day'){
+    const items=dayItems(calendarDate)
+    extra.innerHTML=`<section class="calendar-day"><h2 data-no-i18n="true">${calendarDate} · ${new Date(calendarDate+'T12:00:00').toLocaleDateString(getLanguage()==='en'?'en-US':'zh-CN',{weekday:'long'})}</h2><p>日期范围 · 无小时排期</p>${items.map(eventButton).join('')||'<p class="frame-empty">当天暂无已排期工作项</p>'}</section>`
+  }else if(calendarMode==='month'){
+    const first=weekStart(period.start),count=Math.ceil((dayDiff(first,period.start)+period.days)/7)*7
+    extra.innerHTML=`<div class="calendar-month">${Array.from({length:7},(_,n)=>`<div class="month-weekday">${new Date(addDays(first,n)+'T12:00:00').toLocaleDateString(getLanguage()==='en'?'en-US':'zh-CN',{weekday:'short'})}</div>`).join('')}${Array.from({length:count},(_,n)=>{const date=addDays(first,n),items=dayItems(date);return `<article class="calendar-month-cell ${date.slice(0,7)!==calendarDate.slice(0,7)?'outside-month':''} ${date===current?'is-today':''}"><button class="calendar-date" data-calendar-day="${date}" aria-label="${date}" title="${date}">${Number(date.slice(-2))}</button><div class="month-tasks">${items.map(eventButton).join('')}</div></article>`}).join('')}</div>`
+  }else extra.innerHTML=''
   const dates=s.items.flatMap(i=>[i.start,i.end]).filter((x):x is string=>!!x).sort(),first=dates[0]??current,last=dates.at(-1)??current,span=Math.max(1,dayDiff(first,last)+1),tickCount=Math.min(5,span)
   $('.roadmap').innerHTML=`<div class="roadmap-content"><div class="roadmap-dates">${Array.from({length:tickCount},(_,n)=>{const offset=Math.round((span-1)*n/Math.max(1,tickCount-1));return `<span style="left:${(offset+.5)/span*100}%">${addDays(first,offset)}</span>`}).join('')}</div>`+s.items.map(i=>{const band=dateBand(i,first,span);return `<div class="roadmap-row"><b>${esc(phases.find(x=>x[0]===i.phase)?.[1])}</b><div class="roadmap-task"><button class="roadmap-label" data-task-id="${esc(i.id)}">${userText(i.title)}<small>${esc(i.start??'未排期')} — ${esc(i.end??'未定结束日期')}</small></button><div class="roadmap-track">${band?`<button class="roadbar rb1" aria-label="${esc(i.title)} · ${esc(i.start??i.end)} — ${esc(i.end??i.start)}" data-task-id="${esc(i.id)}" style="left:${band.offset/span*100}%;width:${band.length/span*100}%"></button>`:''}</div></div></div>`}).join('')+(s.items.length?'':'<p class="frame-empty">当前项目尚无任务</p>')+'</div>'
   const reviewRows=reviews.map(x=>`<button class="review-card" data-block-id="${esc(x.id)}"><span class="status-orb pending"></span><span><small>${esc(x.engine==='rules'?'规则整理（非 AI）':x.engine==='ollama'?'Ollama 本地 AI':'人工整理')}</small><b>${userText(x.title)}</b><p>${esc(x.review.status)}${x.commit?' · 已落实':''}</p></span><em>查看</em></button>`).join('')||'<p>暂无待审核需求。</p>'
@@ -148,7 +162,9 @@ document.addEventListener('click',event=>{
   else if(el.id==='localAiButton')fn=async()=>{nav('profile');await detectAi()}
   else if(el.id==='detectAi')fn=detectAi
   else if(el.id==='exportData')fn=()=>exportProject()
-  else if(d.weekStep)fn=()=>{calendarDate=addDays(calendarDate,Number(d.weekStep)*7);render()}
+  else if(d.calendarMode)fn=()=>{if(['day','week','month'].includes(d.calendarMode!)){calendarMode=d.calendarMode as CalendarMode;render()}}
+  else if(d.calendarStep)fn=()=>{calendarDate=stepCalendarDate(calendarDate,calendarMode,Number(d.calendarStep));render()}
+  else if(d.calendarDay)fn=()=>{calendarDate=d.calendarDay!;calendarMode='day';render()}
   else if('weekToday' in d)fn=()=>{calendarDate=today();render()}
   else if(el.matches('.filter-button')&&!el.closest('#drawerBody'))fn=()=>notice('此筛选尚未接入')
   if(fn){event.preventDefault();event.stopImmediatePropagation();void action(fn)}

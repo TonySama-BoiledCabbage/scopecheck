@@ -2,6 +2,16 @@
 
 Work is isolated on `scopecheck/frame-adapter`. Original HTML layout and original `styles.css` are preserved. No project migration, model download, domain-rule change, or formal approval was performed during this audit.
 
+## Day / month view follow-up
+
+Day, Week and Month are now functional. This supersedes the earlier week-only limitation below. All three views use current-project date-only records and the same inclusive date projection; no hourly appointments are invented. Arrows move one day, week or calendar month according to the selected view. Month-end navigation clamps to the target month's last valid day. The native date input and Today work in every mode.
+
+Month cells include adjacent-month dates, highlight today, and list tasks on every date in their inclusive range. Click a date to open Day; click a task in either view to open the existing task editor. Undated items remain available in Tasks without an invented calendar position. Saving retains all original Frame domain approval rules.
+
+Verified in the real browser with existing ARC data: October 2026 renders 35 cells from September 28 through November 1; October 22 opens Day and shows the two actual overlapping tasks; a task opens Edit Task without saving; December 31 → next month produces January 31, 2027 and the January month grid; switching to Day on that date shows the empty-state message. EN → ZH → EN updates mode buttons and weekday names. At 390 × 844, the document width remains 375px including scrollbar effects; the 769px month grid scrolls inside a 353px panel. Temporary viewport was reset. Screenshots: `verification/calendar-month.png`, `verification/calendar-day.png`, `verification/calendar-month-mobile.png`.
+
+Typecheck, 34 Node tests and build pass. Unit checks include leap February, month-end clamping, year transitions and daylight-saving dates. No project records were changed during browser verification.
+
 ## Fixed
 
 - Both calendars use seven days, Monday through Sunday. Sunday was missing from the compact overview.

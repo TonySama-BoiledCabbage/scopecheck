@@ -4,6 +4,7 @@ export type Language='en'|'zh'
 let language:Language='en'
 export const getLanguage=()=>language
 const additions:[string,string][]=[
+  ['日视图','Day'],['周视图','Week'],['月视图','Month'],['上一个周期','Previous period'],['下一个周期','Next period'],['当天暂无已排期工作项','No scheduled work items on this day'],
   ['打开项目资料，选择原件后点击 Ollama 整理。','Open project materials, select an original, then choose Organise with Ollama.'],['本地模型不可用','Local model unavailable'],['本地模型：','Local models:'],['本地 AI','Local AI'],
   ['当前项目的日期范围；未设置小时排期。','Date ranges for the current project. No hourly appointments.'],['上一周','Previous week'],['下一周','Next week'],['选择日期','Choose date'],['今天','Today'],['未定结束日期','No end date'],['未排期','Unscheduled'],['未定','Not set'],
   ['主导航','Main navigation'],['个人设置','Workspace Settings'],

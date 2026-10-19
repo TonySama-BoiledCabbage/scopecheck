@@ -34,6 +34,23 @@
 #calendarSegments > span { font-size: 12px; padding: 8px; }
 .week-picker { display: flex; align-items: center; gap: 6px; padding: 5px; font-size: 12px; }
 .week-picker input { padding: 5px; font: inherit; max-width: 160px; }
+.calendar-day { display: grid; gap: 12px; }
+.calendar-day > p { color: var(--muted); margin: 0 0 8px; }
+.calendar-task { display: block; width: 100%; padding: 12px; border: 0; border-radius: 10px; text-align: left; color: var(--ink); cursor: pointer; overflow-wrap: anywhere; }
+.calendar-task b, .calendar-task b span { font: inherit; font-weight: 700; }
+.calendar-task small { display: block; margin-top: 6px; color: #37586a; font-size: 11px; }
+.calendar-month { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); min-width: 770px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.month-weekday { position: sticky; top: 0; z-index: 2; padding: 12px; background: #f8faf9; color: var(--muted); font-size: 12px; }
+.month-weekday, .calendar-month-cell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.calendar-month-cell { min-width: 0; min-height: 150px; padding: 8px; }
+.calendar-month-cell.outside-month { background: #f5f7f6; }
+.calendar-date { display: grid; place-items: center; width: 30px; height: 30px; margin-bottom: 8px; border: 0; border-radius: 10px; background: transparent; font: inherit; cursor: pointer; }
+.outside-month .calendar-date { color: var(--muted); }
+.is-today .calendar-date { background: var(--ink); color: white; }
+.month-tasks { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
+.month-tasks .calendar-task { padding: 8px; font-size: 12px; }
+.month-tasks .calendar-task small { font-size: 10px; }
+.calendar-task:focus-visible, .calendar-date:focus-visible { outline: 3px solid var(--marine); outline-offset: 2px; }
 .roadmap { overflow: auto; }
 .roadmap-content { min-width: 780px; }
 .roadmap-dates { display: block; position: relative; height: 42px; margin-left: 150px; margin-right: 14px; min-width: 0; }
