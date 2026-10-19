@@ -5,7 +5,7 @@
 import {frame} from '/src/frame.ts';
 import {captureText,extractWithOllama} from '/src/lib/ingest.ts';
 import {latestChanges} from '/src/domain/engine.ts';
-const f=document.querySelector('#app'),report=document.querySelector('#report'),dateMode=new URLSearchParams(location.search).has('ai-dates');
+const f=document.querySelector('#app'),report=document.querySelector('#report'),params=new URLSearchParams(location.search),dateMode=params.has('ai-dates'),multiMode=params.has('multi');
 const wait=async test=>{for(let i=0;i<150;i++){if(test())return;await new Promise(r=>setTimeout(r,100))}throw Error('Timed out')};
 const check=(value,message)=>{if(!value)throw Error(message);report.textContent+='\nPASS '+message};
 const tick=()=>new Promise(r=>setTimeout(r,0));
@@ -13,12 +13,22 @@ document.querySelector('#run').onclick=async()=>{
  report.textContent='Running';
  try{
   const key=await frame.createProject({name:'Review timeline regression '+new Date().toISOString(),client:'Synthetic verification only',start:'2026-10-19'});frame.openProject(key);
-  if(dateMode){
+  const multiText='[2026-10-19 09:00 EDT] Client: Please revise the booking button label and send the new mock-up within two days.\n[2026-10-19 09:08 EDT] Client: Please add a neighborhood filter and have a draft ready within three days.\n[2026-10-19 09:14 EDT] Client: Please share the updated accessibility options by October 22, 2026.\n[2026-10-19 09:20 EDT] Client: Please bring the revised map flow to our next review on October 23, 2026 at 10:00 AM EDT.\n[2026-10-19 09:28 EDT] Client: The blue references look good. Thanks for the update.';
+  const aiStarted=performance.now();
+  if(multiMode){const sourceId=await captureText(multiText,'en');await extractWithOllama(sourceId,'qwen2.5:1.5b','en')}
+  else if(dateMode){
    const sourceId=await captureText('[2026-10-19 09:00 EDT] Client: Please send the updated image by October 21, 2026.\n[2026-10-19 09:05 EDT] Client: Please send the revised cover within three days.\n[2026-10-19 09:10 EDT] Client: Please schedule our next design review for October 23, 2026, from 10:00 to 10:30 AM EDT.','en');
    await extractWithOllama(sourceId,'qwen2.5:1.5b','en');
   }else await captureText('Please estimate an additional charging pad.\nPlease prepare an internal review checklist.','en');
   const state=()=>{frame.openProject(key);return frame.read()};
   check(state().blocks.length>=2,'original parsed into review candidates');
+  const inferenceSeconds=((performance.now()-aiStarted)/1000).toFixed(2);
+  if(multiMode){
+   const ai=state().blocks.filter(b=>b.engine==='ollama');
+   check(ai.length===4,'all four actionable requests in the timestamped conversation become review candidates');
+   check(ai.every(b=>b.evidence.text.startsWith('Please')&&b.evidence.author==='Client'&&b.evidence.eventTimeRaw?.startsWith('2026-10-19')),'each candidate retains its request, speaker and original timestamp');
+   check(ai.map(b=>b.placement.date).join(',')==='2026-10-21,2026-10-22,2026-10-22,2026-10-23','relative and explicit dates resolve from the message timestamps');
+  }
   if(dateMode){
    const ai=state().blocks.filter(b=>b.engine==='ollama');
    check(ai.length===3&&ai.map(b=>b.placement.date).join(',')==='2026-10-21,2026-10-22,2026-10-23','real Qwen extracts absolute, relative and meeting dates from the parsed chat');
@@ -31,6 +41,22 @@ document.querySelector('#run').onclick=async()=>{
    $('.rail-item[data-nav="reviews"]').click();$('#reviewEngine').value='all';$('#reviewEngine').dispatchEvent(new f.contentWindow.Event('change',{bubbles:true}));
    $(`[data-block-id="${id}"]`).click();await tick();
   };
+  if(multiMode){
+   const candidates=state().blocks.filter(b=>b.engine==='ollama');
+   for(const block of candidates){
+    await openReview(block.id);
+    check($('#drawerBody blockquote').textContent===block.evidence.text&&$('#drawerBody .detail-source').textContent.includes(block.evidence.author)&&$('#drawerBody .detail-source').textContent.includes(block.evidence.eventTimeRaw),'full request, speaker and original timestamp are visible for '+block.title.slice(0,35));
+    $('#frameForm input[name="ack"]').click();$('#confirmBlock').click();await wait(()=>$('#commitBlock'));$('#commitBlock').click();await wait(()=>$('#saveTask'));
+    check($('#frameForm input[name="start"]').value===block.placement.date&&$('#frameForm input[name="end"]').value===block.placement.date,'confirmed item receives the extracted date');
+    $('#saveTask').click();await wait(()=>!$('#detailDrawer').classList.contains('open')&&$('#planPanel').classList.contains('active'));
+   }
+   const final=state(),saved=final.items.filter(item=>candidates.some(block=>block.title===item.title));
+   check(saved.length===4,'all four confirmed requests are saved as work items');
+   check(saved.every(item=>!!$(`.roadbar[data-task-id="${item.id}"]`)),'all four saved items have visible timeline bars');
+   check(JSON.stringify(final.baselines)===baseline,'batch confirmation and task saves leave formal baselines unchanged');
+   report.textContent+='\nPASS local model + capture + 4 views/confirmations/saves: '+inferenceSeconds+'s';
+   report.textContent+='\nDONE '+key;return;
+  }
   await openReview(ids[0]);$('#frameForm input[name="ack"]').click();$('#confirmBlock').click();await wait(()=>$('#commitBlock'));await tick();
   check(state().items.length===0&&JSON.stringify(state().baselines)===baseline,'confirmation does not change plan or baseline');
   $('#commitBlock').click();await tick();if(dateMode)check($('#frameForm input[name="start"]').value==='2026-10-21','AI date automatically pre-fills work-item form');$('#frameForm input[name="scopeRisk"]').click();$('#saveTask').click();await wait(()=>$('#decideChange'));await tick();
