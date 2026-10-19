@@ -69,9 +69,10 @@ function changeEditor(id:string){
 function deliveryEditor(){const session=projectSession(),s=session.read();drawer('BASELINE · FRAME',`<h2>提议正式交付日期</h2><form id="frameForm" class="center-form">${field('交付日期','date',s.baselines.at(-1)!.deliveryDate,'date')}</form>${errorSlot}<div class="drawer-actions"><button id="proposeDelivery">记录提议</button></div>`);on('proposeDelivery',async()=>{await frame.proposeDelivery(String(formData().get('date'))||null,s.dataRevision,session);render();changeEditor(latestChanges(session.read())[0].id);notice('提议已记录，尚未批准改期')})}
 async function sourceEditor(id:string){
   const session=projectSession(),s=session.read().sources.find(x=>x.id===id)!
-  drawer('SOURCE · FRAME',`<h2 data-no-i18n="true">${esc(s.name)}</h2><p>${esc(s.status)} · ${esc(s.parser)}<br>${esc(s.error)}<br>${s.warnings.map(esc).join('<br>')}</p><p>${esc(aiStatus)}</p>${errorSlot}<div class="drawer-actions"><button id="downloadOriginal">下载原件</button><button id="retrySource">重新解析（规则整理）</button>${models.length?`<select id="sourceModel" aria-label="本地模型">${models.map(m=>`<option>${esc(m)}</option>`).join('')}</select><button id="aiExtract">Ollama 整理</button>`:''}</div>`)
+  drawer('SOURCE · FRAME',`<h2 data-no-i18n="true">${esc(s.name)}</h2><p>${esc(s.status)} · ${esc(s.parser)}<br>${esc(s.error)}<br>${s.warnings.map(esc).join('<br>')}</p><p>${esc(aiStatus)}</p>${errorSlot}<div class="drawer-actions"><button id="downloadOriginal">下载原件</button><button id="retrySource">重新解析（规则整理）</button><select id="sourceModel" aria-label="本地模型" ${models.length?'':'disabled'}>${models.length?models.map(m=>`<option>${esc(m)}</option>`).join(''):`<option>${getLanguage()==='en'?'Local model unavailable':'本地模型不可用'}</option>`}</select><button id="aiExtract" ${models.length?'':'disabled'}>Ollama 整理</button><button id="sourceRecheck">重新检测 →</button></div>`)
   on('downloadOriginal',async()=>{session.read();const file=await getOriginal(s.hash),url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=s.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)})
   on('retrySource',async()=>{session.read();await retrySource(id);if(useIngest.getState().error)throw Error(useIngest.getState().error);render();await sourceEditor(id);notice('解析结果已保存（规则整理）')})
+  on('sourceRecheck',async()=>{await detectAi();await sourceEditor(id)})
   if(models.length)on('aiExtract',async()=>{session.read();await extractWithOllama(id,(document.getElementById('sourceModel') as HTMLSelectElement).value,getLanguage());render();await sourceEditor(id);notice('Ollama 候选已保存，等待人工审核')})
 }
 
@@ -116,7 +117,7 @@ function render(){
   $('#reviewsView .eyebrow').textContent='REQUIREMENT REVIEW';$('#reviewsView .page-heading p').textContent='规则整理与本地 AI 的候选分别标识；确认内容不会批准改期。'
   $('#captureTitle').textContent='保存原件并整理候选';$('#analyzeButton').textContent='保存原件并解析（规则整理）';$('.drop-zone span').textContent='原件先保存在本机；解析失败可重试，不会批准需求。'
   $('.notification-button').hidden=true;$('.project-legend').innerHTML=`<span>${esc(s.project.name)}</span>`;document.querySelectorAll('.segmented:not(#calendarSegments),.toolbar-right,.toolbar > .filter-button,.panel-actions .filter-button,.focus-chip .pulse').forEach(x=>(x as HTMLElement).hidden=true)
-  $('#profileView .page-heading h1').textContent='本机工作空间';$('#profileView .page-heading p').textContent=aiStatus;$('#profileView .profile-grid').innerHTML=`<article class="panel settings-card"><h2>本地服务</h2><button id="detectAi"><span>${esc(aiStatus)}</span><b>重新检测 →</b></button><button id="exportData"><span>导出当前项目元数据</span><b>JSON →</b></button><p>原件请在项目资料中单独下载。聊天、邮箱、账户与计时服务尚未接入。</p></article>`
+  $('#profileView .page-heading h1').textContent='本机工作空间';$('#profileView .page-heading p').textContent=aiStatus;$('#profileView .profile-grid').innerHTML=`<article class="panel settings-card"><h2>本地服务</h2><p data-no-i18n="true">Ollama · http://127.0.0.1:11434</p><p>本地模型： <span data-no-i18n="true">${models.length?models.map(esc).join(' · '):'—'}</span></p><button id="detectAi"><span>${esc(aiStatus)}</span><b>重新检测 →</b></button><button id="exportData"><span>导出当前项目元数据</span><b>JSON →</b></button><p>打开项目资料，选择原件后点击 Ollama 整理。</p><p>原件请在项目资料中单独下载。聊天、邮箱、账户与计时服务尚未接入。</p></article>`
 }
 
 async function detectAi(){models=[];try{const r=await fetch('/api/local-ai/models',{headers:{'X-Frame-Parser':'local-v1'}});const v=await r.json();if(!r.ok)throw Error(v.error||'本地 AI 不可用');models=v.models;aiStatus=models.length?`Ollama 可用 · ${models.length} 个本地模型`:'Ollama 不可用：未发现已安装的本地模型'}catch(e){aiStatus='Ollama 不可用：'+(e instanceof Error?e.message:String(e))}render()}
@@ -144,6 +145,7 @@ document.addEventListener('click',event=>{
   else if(el.id==='analyzeButton')fn=async()=>{const fileTab=$('[data-capture-content="file"]').classList.contains('active');if(fileTab){const files=(document.querySelector('.drop-zone input') as HTMLInputElement).files;if(!files?.length)throw Error('请先选择文件。');await importFiles([...files]);if(useIngest.getState().error)throw Error(useIngest.getState().error)}else await captureText(($('#captureText') as HTMLTextAreaElement).value,getLanguage());render();$('#analysisPreview').textContent='原件与规则整理候选已保存；请在待确认页面审核。';notice('原件与解析结果已保存（规则整理）')}
   else if(el.matches('.board-panel .primary-button,#calendarView .page-heading .primary-button'))fn=()=>taskEditor()
   else if(el.matches('.project-summary .icon-button'))fn=()=>projectEditor()
+  else if(el.id==='localAiButton')fn=async()=>{nav('profile');await detectAi()}
   else if(el.id==='detectAi')fn=detectAi
   else if(el.id==='exportData')fn=()=>exportProject()
   else if(d.weekStep)fn=()=>{calendarDate=addDays(calendarDate,Number(d.weekStep)*7);render()}
@@ -165,6 +167,7 @@ window.addEventListener('storage',event=>{try{if(event.key===null||event.key===u
 // The V2 appended review screen has no matching HTML anchor; retain the original review view.
 document.querySelectorAll('.rail-item[data-nav="reviews"]').forEach((x,i)=>{if(i)x.remove()})
 try{const key=location.hash.match(/^#project\/([^/]+)/)?.[1];if(key)openProject(decodeURIComponent(key))}catch(e){notice(String(e))}
+const localAiButton=document.createElement('button');localAiButton.id='localAiButton';localAiButton.className='language-switch';localAiButton.textContent='本地 AI';localAiButton.setAttribute('aria-label','本地 AI');$('.top-actions').prepend(localAiButton)
 window.addEventListener('scopecheck-language',render)
 render();initI18n();void detectAi()
 
